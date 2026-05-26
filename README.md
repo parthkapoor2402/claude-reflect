@@ -16,6 +16,7 @@
 - [The Exact Problem](#the-exact-problem)
 - [Current Market Gap](#current-market-gap)
 - [Claude Reflect as a Product](#claude-reflect-as-a-product)
+- [Key UX Features](#key-ux-features)
 - [Data Pipeline](#data-pipeline)
 - [Feasible Market Capture](#feasible-market-capture)
 - [PM Roadmap — What to Build Next](#pm-roadmap--what-to-build-next)
@@ -36,7 +37,7 @@ Generative AI tools optimize for **fluency**, not **epistemic honesty**. Users r
 
 **Claude Reflect** is a reasoning transparency layer that runs **after** every assistant response. It does not replace human judgment — it structures where judgment is needed: assumptions, confidence zones, completeness gaps, and context-specific questions.
 
-This repository is a full-stack reference implementation: streaming chat, meta-reasoning Reflect pass, demo scenarios, and production deployment on Vercel.
+This repository is a full-stack reference implementation: streaming chat, meta-reasoning Reflect pass, zero-friction first-time onboarding, demo scenarios, and production deployment on Vercel.
 
 ---
 
@@ -119,6 +120,38 @@ After each AI response, Reflect answers four questions for the user:
 - **Product managers** — strategy, sizing, PRDs, stakeholder comms  
 - **Operators / founders** — market entry, hiring, projections  
 - **Knowledge workers** — any task where a “good enough” AI paragraph can hide expensive gaps  
+
+---
+
+## Key UX Features
+
+### Zero-friction first-time onboarding
+
+On the **first Reflect panel open per session**, an in-panel banner appears automatically — no “?” icon or extra click required.
+
+| Step | What happens |
+|------|----------------|
+| **1 — Intro** | “✦ New to Reflect?” plus a one-line explanation of epistemic transparency (not fact-checking) |
+| **2 — Expand** | **Got it →** expands the banner to show **Reflect DOES / DOES NOT** columns with animated reveal (250ms) |
+| **3 — Close** | **Close ✕** dismisses the banner for the rest of the session (`reflectIntro.js` module flag) |
+
+Session state is in-memory only (no `localStorage`) — fresh onboarding each new browser session.
+
+### Readable Reflect panel
+
+- All dimension text **wraps fully** — no `line-clamp`, truncation, or mid-sentence clipping  
+- Panel scrolls at **max-height: 70vh** when content is long  
+- Each section uses `height: auto` and `overflow: visible`  
+
+### Persistent epistemic footer
+
+Every Reflect panel includes a faint, always-visible footer:
+
+*“Reflect assists judgment — not a verdict, not a trust score”*
+
+### Free-form chat
+
+Ask anything outside the three demo scenarios — chat and Reflect use the **same pipeline**. Demo cards add scenario lock, expected-gap badges, and gap-aware follow-ups.
 
 ---
 
@@ -218,6 +251,7 @@ Prioritized from a **product manager** lens — impact × feasibility.
 
 | Initiative | Rationale | Success metric |
 |------------|-----------|----------------|
+| ~~**First-time onboarding banner**~~ | ✅ Shipped — in-panel two-step DOES/DOES NOT flow | Banner → expand → close completion |
 | **Reflect for all chats** (auto-expand optional) | Free-form users get parity with demo UX | Reflect open rate ↑ |
 | **Explicit “copy gaps to follow-up”** | Closes loop from analysis → action | Follow-up messages referencing gaps ↑ |
 | **Severity explainability** | Users learn what amber means | Reduced “ignore Reflect” rate |
@@ -371,13 +405,19 @@ Deployed via **Vercel** (`vercel.json`): static client + Node serverless routes.
 
 ```
 claude-reflect/
-├── client/                 # React UI, scenarios, useChat hook
+├── client/
+│   ├── src/components/     # ReflectPanel, ChatInterface, scenarios UI
+│   ├── src/hooks/          # useChat (streaming + reflect fetch)
+│   ├── src/utils/          # reflectIntro.js (session onboarding state)
+│   └── src/data/           # scenarios.js
 ├── server/
 │   ├── routes/             # chat.js, reflect.js
 │   ├── prompts/            # reflect-system-prompt.js
 │   ├── utils/              # env, groq, reflectValidation
-│   └── tests/              # Jest + Supertest
-├── docs/phases/            # Build-phase specifications
+│   └── tests/              # Jest + Supertest (18 tests)
+├── docs/
+│   ├── PRODUCT.md          # Extended PM product brief
+│   └── phases/             # Build-phase specifications
 ├── vercel.json
 └── README.md
 ```
