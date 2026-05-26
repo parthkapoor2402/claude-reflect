@@ -396,11 +396,13 @@ npm test
 Deployed via **Vercel** (`vercel.json`): static client + Node serverless API.
 
 1. Import [github.com/parthkapoor2402/claude-reflect](https://github.com/parthkapoor2402/claude-reflect)
-2. **Root directory:** leave as repo root (not `client/`)
-3. Set environment variable **`GROQ_API_KEY`** (Project → Settings → Environment Variables)
-4. Deploy — `VITE_API_URL` is empty in production (same-origin `/api`)
+2. **Project name:** `claude-reflect` (lowercase, no spaces)
+3. **Root directory:** repo root `./` (not `client/`)
+4. **Framework preset:** Other
+5. **Environment variable:** `GROQ_API_KEY` = your Groq key (Production + Preview)
+6. Deploy — `VITE_API_URL` is empty in production (same-origin `/api`)
 
-**If you see a 404 on the homepage:** the old route sent `/` to `client/dist/` instead of `index.html`. Current `vercel.json` uses `filesystem` + SPA fallback to `/index.html`. Redeploy after pulling latest `main`.
+**Do not** put your API key in the Project Name field — only in Environment Variables.
 
 ---
 
