@@ -1,6 +1,8 @@
 {
   "name": "claude-reflect",
   "version": "1.0.0",
+  "description": "AI Output Transparency Layer — live prototype with epistemic Reflect analysis after every AI response",
+  "homepage": "https://claude-reflect-gamma.vercel.app",
   "private": true,
   "scripts": {
     "dev:client": "cd client && npm run dev",

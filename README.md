@@ -2,6 +2,9 @@
 
 **AI Output Transparency Layer** — a product case study in epistemic UX for generative AI.
 
+**Live prototype:** [https://claude-reflect-gamma.vercel.app](https://claude-reflect-gamma.vercel.app)
+
+[![Live Demo](https://img.shields.io/badge/demo-live-orange)](https://claude-reflect-gamma.vercel.app)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/parthkapoor2402/claude-reflect)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-blue)
 ![Tests](https://img.shields.io/badge/tests-18%20passing-brightgreen)
@@ -25,6 +28,7 @@
 - [Getting Started](#getting-started)
 - [API Reference](#api-reference)
 - [Testing](#testing)
+- [Live Demo](#live-demo)
 - [Deployment](#deployment)
 - [Project Structure](#project-structure)
 - [Research & Validation](#research--validation)
@@ -38,6 +42,20 @@ Generative AI tools optimize for **fluency**, not **epistemic honesty**. Users r
 **Claude Reflect** is a reasoning transparency layer that runs **after** every assistant response. It does not replace human judgment — it structures where judgment is needed: assumptions, confidence zones, completeness gaps, and context-specific questions.
 
 This repository is a full-stack reference implementation: streaming chat, meta-reasoning Reflect pass, zero-friction first-time onboarding, demo scenarios, and production deployment on Vercel.
+
+**Try it now:** [claude-reflect-gamma.vercel.app](https://claude-reflect-gamma.vercel.app)
+
+---
+
+## Live Demo
+
+| | |
+|---|---|
+| **URL** | [https://claude-reflect-gamma.vercel.app](https://claude-reflect-gamma.vercel.app) |
+| **Stack** | React (Vite) + Express on Vercel + Groq API |
+| **What to try** | Pick a demo scenario → Send → Expand **Reflect Analysis** after the response |
+
+Health check: [https://claude-reflect-gamma.vercel.app/api/health](https://claude-reflect-gamma.vercel.app/api/health)
 
 ---
 
@@ -393,7 +411,9 @@ npm test
 
 ## Deployment
 
-Deployed via **Vercel** (`vercel.json`): static client + Node serverless API.
+**Production:** [https://claude-reflect-gamma.vercel.app](https://claude-reflect-gamma.vercel.app)
+
+Deployed via **Vercel** (`vercel.json`): static client (`client/dist`) + Express API (`api/index.js`).
 
 1. Import [github.com/parthkapoor2402/claude-reflect](https://github.com/parthkapoor2402/claude-reflect)
 2. **Project name:** `claude-reflect` (lowercase, no spaces)
