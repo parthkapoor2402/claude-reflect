@@ -66,13 +66,6 @@ function Sidebar({ onClose, onNewChat }) {
           <Zap className="h-3.5 w-3.5 text-reflect-muted" />
           <span className="text-xs text-reflect-muted">Powered by Groq</span>
         </div>
-        <p className="text-center text-[10px] leading-relaxed text-reflect-muted/80">
-          Claude Reflect — PM Case Study
-          <br />
-          Built for NextLeap Fellowship 2025
-          <br />
-          Survey: N=25 | Hypothesis: Calibration Gap
-        </p>
       </div>
     </aside>
   );
