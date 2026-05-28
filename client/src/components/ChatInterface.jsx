@@ -7,6 +7,7 @@ import ScenarioSelector from './ScenarioSelector';
 import ActiveScenarioBar from './ActiveScenarioBar';
 import ScenarioToast from './ScenarioToast';
 import OfflineBanner from './OfflineBanner';
+import SessionInsightFloatingCard from './SessionInsightFloatingCard';
 
 export default function ChatInterface({ onMenuClick }) {
   const scrollRef = useRef(null);
@@ -18,6 +19,13 @@ export default function ChatInterface({ onMenuClick }) {
   const [sendPressed, setSendPressed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
+  const reflectOpenCount = useRef(0);
+  const followUpAfterReflect = useRef(false);
+  const sessionCardShown = useRef(false);
+  const [showSessionCard, setShowSessionCard] = useState(false);
+  const lastReflectWasOpen = useRef(false);
+  const sessionCardTimerRef = useRef(null);
+
   const {
     messages,
     isLoading,
@@ -26,6 +34,45 @@ export default function ChatInterface({ onMenuClick }) {
     dismissReflect,
     retryMessage,
   } = useChat(scrollRef);
+
+  const handleReflectToggle = useCallback(
+    (messageId) => {
+      const target = messages.find((m) => m.id === messageId);
+      const wasExpanded = Boolean(target?.reflect?.expanded);
+      toggleReflectExpanded(messageId);
+      if (!wasExpanded) {
+        reflectOpenCount.current += 1;
+        lastReflectWasOpen.current = true;
+      }
+    },
+    [messages, toggleReflectExpanded]
+  );
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (sessionCardShown.current) return;
+    if (messages.length < 4) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'assistant') return;
+
+    if (
+      reflectOpenCount.current >= 1 &&
+      followUpAfterReflect.current === true &&
+      sessionCardShown.current === false
+    ) {
+      sessionCardShown.current = true;
+      if (sessionCardTimerRef.current) {
+        clearTimeout(sessionCardTimerRef.current);
+      }
+      sessionCardTimerRef.current = setTimeout(() => setShowSessionCard(true), 1200);
+    }
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (sessionCardTimerRef.current) clearTimeout(sessionCardTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -87,6 +134,11 @@ export default function ChatInterface({ onMenuClick }) {
     }
     if (isLoading) return;
 
+    if (lastReflectWasOpen.current === true) {
+      followUpAfterReflect.current = true;
+      lastReflectWasOpen.current = false;
+    }
+
     const prompt = input;
     const scenario =
       lockedScenario ||
@@ -128,7 +180,7 @@ export default function ChatInterface({ onMenuClick }) {
     isLoading && lastAssistant ? lastAssistant.id : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-reflect-surface">
+    <div className="relative flex h-full min-h-0 flex-col bg-reflect-surface">
       <OfflineBanner visible={isOffline} />
       <ScenarioToast message={toast.message} visible={toast.visible} />
 
@@ -211,7 +263,7 @@ export default function ChatInterface({ onMenuClick }) {
                 key={message.id}
                 message={message}
                 isActivelyStreaming={message.id === streamingAssistantId}
-                onReflectExpand={toggleReflectExpanded}
+                onReflectExpand={handleReflectToggle}
                 onReflectDismiss={dismissReflect}
                 onRetry={retryMessage}
               />
@@ -219,6 +271,14 @@ export default function ChatInterface({ onMenuClick }) {
           </div>
         )}
       </div>
+
+      {showSessionCard && !isEmpty && (
+        <SessionInsightFloatingCard
+          reflectCount={reflectOpenCount.current}
+          gapsFixed={followUpAfterReflect.current ? 1 : 0}
+          onDismiss={() => setShowSessionCard(false)}
+        />
+      )}
 
       {/* Fixed input dock — always visible */}
       <div className="shrink-0 border-t border-reflect-border bg-reflect-surface px-3 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
