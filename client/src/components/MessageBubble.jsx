@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { getScenarioById } from '../data/scenarios';
 import ReflectIndicator from './ReflectIndicator';
 import ReflectPanel from './ReflectPanel';
@@ -58,7 +59,20 @@ export default function MessageBubble({
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="flex animate-slide-up flex-col items-end gap-1"
       >
-        <div className="max-w-[70%] rounded-full bg-reflect-accent px-5 py-3 text-sm leading-relaxed text-white">
+        <div
+          className="bg-reflect-accent text-sm leading-relaxed text-white"
+          style={{
+            width: 'fit-content',
+            maxWidth: '85%',
+            minWidth: '80px',
+            height: 'auto',
+            overflow: 'visible',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            padding: '12px 16px',
+            borderRadius: '18px',
+          }}
+        >
           {content}
         </div>
         <span className="text-xs text-reflect-muted">{formatTime(timestamp)}</span>
@@ -86,9 +100,17 @@ export default function MessageBubble({
             {showSkeleton && <MessageSkeleton />}
             {showTyping && <TypingIndicator />}
             {!showSkeleton && !showTyping && (
-              <span className={isStreaming && content ? 'animate-fade-in' : ''}>
-                {isError ? content : content || null}
-              </span>
+              isError ? (
+                <span>{content}</span>
+              ) : (
+                <div
+                  className={`ai-response-content ${
+                    isStreaming && content ? 'animate-fade-in' : ''
+                  }`}
+                >
+                  <ReactMarkdown>{content || ''}</ReactMarkdown>
+                </div>
+              )
             )}
             {isRetryable && isError && (
               <button

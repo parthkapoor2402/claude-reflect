@@ -5,6 +5,7 @@
   "homepage": "https://claude-reflect-gamma.vercel.app",
   "private": true,
   "scripts": {
+    "dev": "npx concurrently -n server,client -c blue,orange \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && npm run dev",
     "build": "cd client && npm run build",

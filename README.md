@@ -370,7 +370,9 @@ npm run dev:server   # terminal 1
 npm run dev:client   # terminal 2
 ```
 
-Open **http://localhost:5173**
+Open **http://127.0.0.1:5173** (use this URL in Cursor’s browser if `localhost` shows “connection failed”)
+
+**One command** (both servers): from repo root run `npm run dev`
 
 ---
 

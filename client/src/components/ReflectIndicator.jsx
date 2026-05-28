@@ -1,5 +1,3 @@
-import { ChevronDown } from 'lucide-react';
-
 export default function ReflectIndicator({
   severity,
   gapCount = 0,
@@ -9,51 +7,87 @@ export default function ReflectIndicator({
 }) {
   if (loading) {
     return (
-      <div
-        className="mt-2 flex h-8 max-w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs text-reflect-muted"
-        style={{
-          background: '#f973161a',
-          border: '1px solid #f9731640',
-        }}
-        aria-live="polite"
-      >
-        <span className="h-2 w-2 rounded-full bg-reflect-accent animate-reflect-pulse" />
-        <span>Reflect is analysing...</span>
-      </div>
+      <>
+        <div
+          className="reflect-indicator-divider"
+          aria-hidden="true"
+        />
+        <div
+          className="reflect-indicator-banner reflect-indicator-loading w-full"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-reflect-accent animate-reflect-pulse" />
+            <span className="text-xs text-reflect-muted">Reflect is analysing...</span>
+          </div>
+        </div>
+      </>
     );
   }
 
   const isAmber = severity === 'amber';
   const areasLabel = gapCount === 1 ? 'area' : 'areas';
+  const secondaryText = isExpanded
+    ? null
+    : isAmber
+      ? `${gapCount} ${areasLabel} worth a closer look — tap to see assumptions, gaps & judgment prompts`
+      : 'output looks reasonably complete — tap to see assumptions, gaps & judgment prompts';
+
+  const primaryText = isExpanded
+    ? 'Reflect Analysis — reviewing output'
+    : 'Reflect Analysis ready';
 
   return (
-    <button
-      type="button"
-      onClick={onExpand}
-      className="mt-2 flex h-8 min-h-[44px] max-w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-all duration-200 ease-out hover:brightness-110"
-      style={
-        isAmber
-          ? {
-              background: '#f973161a',
-              border: '1px solid #f9731640',
-              color: '#f97316',
-            }
-          : {
-              background: '#22c55e1a',
-              border: '1px solid #22c55e40',
-              color: '#22c55e',
-            }
-      }
-    >
-      <span>
-        {isAmber
-          ? `⚠ Reflect — ${gapCount} ${areasLabel} worth a closer look`
-          : '✓ Reflect — output looks reasonably complete'}
-      </span>
-      <ChevronDown
-        className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ease-out"
-        style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-      />
-    </button>
+    <>
+      <div className="reflect-indicator-divider" aria-hidden="true" />
+      <button
+        type="button"
+        onClick={onExpand}
+        className={`reflect-indicator-banner w-full ${
+          isExpanded ? 'reflect-indicator-expanded' : 'reflect-indicator-pulse'
+        }`}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+          <span
+            className="shrink-0 text-base"
+            style={{ color: '#f97316', fontSize: '16px', marginRight: '2px' }}
+            aria-hidden="true"
+          >
+            ⚠
+          </span>
+          <div className="min-w-0 flex-1">
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: '#f97316',
+              }}
+            >
+              {primaryText}
+            </div>
+            {!isExpanded && secondaryText && (
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#a3a3a3',
+                  fontWeight: 400,
+                  marginTop: '2px',
+                  lineHeight: 1.45,
+                }}
+              >
+                {secondaryText}
+              </div>
+            )}
+          </div>
+        </div>
+        <span
+          className="shrink-0"
+          style={{ color: '#f97316', fontSize: '18px' }}
+          aria-hidden="true"
+        >
+          {isExpanded ? '▴' : '▾'}
+        </span>
+      </button>
+    </>
   );
 }

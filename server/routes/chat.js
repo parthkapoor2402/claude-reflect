@@ -4,8 +4,15 @@ const { createGroqClient } = require('../utils/groq');
 
 const router = express.Router();
 
-const SYSTEM_PROMPT =
-  'You are a knowledgeable AI assistant. Give thorough, well-structured responses. Use clear paragraphs. Never use excessive bullet points — prefer prose with occasional lists when genuinely needed.';
+const SYSTEM_PROMPT = `You are a knowledgeable AI assistant. Give thorough, well-structured responses.
+
+Always format your responses using markdown for readability.
+Use ## for section headings.
+Use bullet points (- ) for lists of items, risks, or recommendations.
+Use **bold** for key terms, important words, and critical points.
+Break content into short paragraphs of 2-3 sentences maximum.
+Never write more than 3 sentences in a row without a heading, bullet point, or line break.
+Structure complex answers with clear sections and sub-sections.`;
 
 router.post('/chat', async (req, res) => {
   const { prompt, history = [] } = req.body;

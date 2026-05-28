@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  getSessionInsightCounts,
+  incrementFollowUpActionCount,
+  incrementReflectOpenCount,
+  markSessionCardShown,
+  resetSessionInsight,
+} from '../utils/sessionInsight';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const CHAT_API = `${API_BASE}/api/chat`;
@@ -64,10 +71,12 @@ Give a refined, more complete response that directly addresses the gaps above. S
 export function useChat(scrollRef) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionInsightVisible, setSessionInsightVisible] = useState(false);
   const abortRef = useRef(null);
   const reflectGenerationRef = useRef(0);
   const lastRequestRef = useRef(null);
   const sessionScenarioRef = useRef(null);
+  const followUpQueuedRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -157,6 +166,18 @@ export function useChat(scrollRef) {
     async (prompt, scenario = null) => {
       const trimmed = prompt?.trim();
       if (!trimmed || isLoading) return false;
+
+      const priorAssistantCount = messages.filter(
+        (m) => m.role === 'assistant' && m.content?.trim() && !m.isError
+      ).length;
+      const { reflectOpenCount } = getSessionInsightCounts();
+      const isFollowUpAfterReflect =
+        priorAssistantCount >= 1 && reflectOpenCount >= 1;
+
+      if (isFollowUpAfterReflect) {
+        incrementFollowUpActionCount();
+        followUpQueuedRef.current = true;
+      }
 
       const activeScenario = scenario || sessionScenarioRef.current;
       if (activeScenario) {
@@ -285,6 +306,28 @@ export function useChat(scrollRef) {
             streamedContent.trim(),
             autoExpand
           );
+
+          if (followUpQueuedRef.current) {
+            followUpQueuedRef.current = false;
+            const assistantCount = [...messages, assistantMessage].filter(
+              (m) => m.role === 'assistant' && m.content?.trim() && !m.isError
+            ).length;
+            const {
+              reflectOpenCount,
+              followUpActionCount,
+              sessionCardShown,
+            } = getSessionInsightCounts();
+
+            if (
+              reflectOpenCount >= 1 &&
+              followUpActionCount >= 1 &&
+              assistantCount >= 2 &&
+              sessionCardShown === false
+            ) {
+              markSessionCardShown();
+              setTimeout(() => setSessionInsightVisible(true), 800);
+            }
+          }
         }
       }
 
@@ -308,6 +351,9 @@ export function useChat(scrollRef) {
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId || !m.reflect) return m;
+        if (!m.reflect.expanded) {
+          incrementReflectOpenCount();
+        }
         return {
           ...m,
           reflect: { ...m.reflect, expanded: !m.reflect.expanded },
@@ -333,6 +379,8 @@ export function useChat(scrollRef) {
     if (abortRef.current) abortRef.current.abort();
     setMessages([]);
     setIsLoading(false);
+    setSessionInsightVisible(false);
+    resetSessionInsight();
     lastRequestRef.current = null;
     sessionScenarioRef.current = null;
   }, []);
@@ -345,5 +393,7 @@ export function useChat(scrollRef) {
     toggleReflectExpanded,
     dismissReflect,
     retryMessage,
+    sessionInsightVisible,
+    dismissSessionInsight: () => setSessionInsightVisible(false),
   };
 }

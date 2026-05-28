@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { getTheme, subscribeTheme } from '../theme/themeStore';
 
 export function useTheme() {
