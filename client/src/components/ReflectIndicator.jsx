@@ -1,4 +1,5 @@
 export default function ReflectIndicator({
+  tier = 'high',
   severity,
   gapCount = 0,
   onExpand,
@@ -25,42 +26,80 @@ export default function ReflectIndicator({
     );
   }
 
-  const isAmber = severity === 'amber';
   const areasLabel = gapCount === 1 ? 'area' : 'areas';
-  const secondaryText = isExpanded
-    ? null
-    : isAmber
-      ? `${gapCount} ${areasLabel} worth a closer look — tap to see assumptions, gaps & judgment prompts`
-      : 'output looks reasonably complete — tap to see assumptions, gaps & judgment prompts';
 
-  const primaryText = isExpanded
-    ? 'Reflect Analysis — reviewing output'
-    : 'Reflect Analysis ready';
+  const copyByTier = {
+    low: {
+      label: isExpanded ? 'Reflect — reviewing output' : 'Reflect available',
+      subtext: 'Review assumptions and strengthen your next step',
+      icon: null,
+    },
+    medium: {
+      label: isExpanded ? 'Reflect — reviewing output' : 'Worth a second look',
+      subtext: 'A few assumptions or judgment calls may need your review',
+      icon: 'ℹ',
+    },
+    high: {
+      label: isExpanded ? 'Reflect Analysis — reviewing output' : 'Potential gaps to review',
+      subtext: `${gapCount} ${areasLabel} may need closer scrutiny before you act`,
+      icon: '⚠',
+    },
+  };
+
+  const resolvedTier = tier === 'low' || tier === 'medium' || tier === 'high' ? tier : 'high';
+  const { label: primaryText, subtext, icon } = copyByTier[resolvedTier];
+  const secondaryText = isExpanded ? null : subtext;
+
+  const bannerVariantClass =
+    resolvedTier === 'low'
+      ? 'reflect-indicator-low'
+      : resolvedTier === 'medium'
+        ? 'reflect-indicator-medium'
+        : 'reflect-indicator-high';
 
   return (
     <>
-      <div className="reflect-indicator-divider" aria-hidden="true" />
+      <div
+        className={`reflect-indicator-divider ${
+          resolvedTier === 'low'
+            ? 'reflect-indicator-divider-low'
+            : resolvedTier === 'medium'
+              ? 'reflect-indicator-divider-medium'
+              : ''
+        }`}
+        aria-hidden="true"
+      />
       <button
         type="button"
         onClick={onExpand}
-        className={`reflect-indicator-banner w-full ${
-          isExpanded ? 'reflect-indicator-expanded' : 'reflect-indicator-pulse'
+        className={`reflect-indicator-banner w-full ${bannerVariantClass} ${
+          isExpanded
+            ? 'reflect-indicator-expanded'
+            : resolvedTier === 'high'
+              ? 'reflect-indicator-pulse'
+              : ''
         }`}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
-          <span
-            className="shrink-0 text-base"
-            style={{ color: '#f97316', fontSize: '16px', marginRight: '2px' }}
-            aria-hidden="true"
-          >
-            ⚠
-          </span>
+          {icon && (
+            <span
+              className="shrink-0 text-base"
+              style={{
+                color: resolvedTier === 'high' ? '#f97316' : '#a3a3a3',
+                fontSize: '16px',
+                marginRight: '2px',
+              }}
+              aria-hidden="true"
+            >
+              {icon}
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <div
               style={{
                 fontSize: '14px',
                 fontWeight: 700,
-                color: '#f97316',
+                color: resolvedTier === 'high' ? '#f97316' : 'var(--reflect-text)',
               }}
             >
               {primaryText}
@@ -82,7 +121,10 @@ export default function ReflectIndicator({
         </div>
         <span
           className="shrink-0"
-          style={{ color: '#f97316', fontSize: '18px' }}
+          style={{
+            color: resolvedTier === 'high' ? '#f97316' : 'var(--reflect-muted)',
+            fontSize: '18px',
+          }}
           aria-hidden="true"
         >
           {isExpanded ? '▴' : '▾'}

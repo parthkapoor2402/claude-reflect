@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { getScenarioById } from '../data/scenarios';
+import { getReflectTier } from '../utils/reflectTier';
 import ReflectIndicator from './ReflectIndicator';
 import ReflectPanel from './ReflectPanel';
 import TypingIndicator from './TypingIndicator';
@@ -50,6 +51,10 @@ export default function MessageBubble({
 
   const showIndicator =
     showReflect && (reflect.loading || reflect.data);
+
+  const reflectTier = showReflect
+    ? getReflectTier({ responseText: content || '', scenarioId })
+    : null;
 
   if (isUser) {
     return (
@@ -126,6 +131,7 @@ export default function MessageBubble({
           {showIndicator && (
             <div className="reflect-layer mt-2 w-full max-w-full">
               <ReflectIndicator
+                tier={reflectTier}
                 severity={reflect.loading ? undefined : reflect.data?.severity}
                 gapCount={
                   reflect.data?.gap_count ??
@@ -141,6 +147,7 @@ export default function MessageBubble({
                   <ReflectPanel
                     key="reflect-panel"
                     reflectData={reflect.data}
+                    tier={reflectTier}
                     messageId={id}
                     expectedGaps={scenarioExpectedGaps}
                     onDismiss={() => onReflectDismiss(id)}

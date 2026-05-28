@@ -8,6 +8,8 @@ import ActiveScenarioBar from './ActiveScenarioBar';
 import ScenarioToast from './ScenarioToast';
 import OfflineBanner from './OfflineBanner';
 import SessionInsightFloatingCard from './SessionInsightFloatingCard';
+import ReflectMemoryCard from './ReflectMemoryCard';
+import { getReflectMemoryInsight } from '../utils/reflectMemory';
 
 export default function ChatInterface({ onMenuClick }) {
   const scrollRef = useRef(null);
@@ -26,6 +28,25 @@ export default function ChatInterface({ onMenuClick }) {
   const lastReflectWasOpen = useRef(false);
   const sessionCardTimerRef = useRef(null);
 
+  const reflectMemory = useRef({
+    totalPrompts: 0,
+    totalReflectOpens: 0,
+    totalFollowUpsAfterReflect: 0,
+    scenarioUsage: {
+      risk: { prompts: 0, reflectOpens: 0, followUps: 0 },
+      career: { prompts: 0, reflectOpens: 0, followUps: 0 },
+      revenue: { prompts: 0, reflectOpens: 0, followUps: 0 },
+      custom: { prompts: 0, reflectOpens: 0, followUps: 0 },
+    },
+    lastScenarioType: 'custom',
+    memoryInsightShownCount: 0,
+  });
+  const [memoryInsight, setMemoryInsight] = useState(null);
+  const memoryInsightCooldown = useRef(false);
+  const lastActionWasReflectOpen = useRef(false);
+  const memoryInsightTimerRef = useRef(null);
+  const memoryCooldownTimerRef = useRef(null);
+
   const {
     messages,
     isLoading,
@@ -43,6 +64,11 @@ export default function ChatInterface({ onMenuClick }) {
       if (!wasExpanded) {
         reflectOpenCount.current += 1;
         lastReflectWasOpen.current = true;
+
+        reflectMemory.current.totalReflectOpens += 1;
+        const scenarioType = reflectMemory.current.lastScenarioType || 'custom';
+        reflectMemory.current.scenarioUsage[scenarioType].reflectOpens += 1;
+        lastActionWasReflectOpen.current = true;
       }
     },
     [messages, toggleReflectExpanded]
@@ -71,8 +97,32 @@ export default function ChatInterface({ onMenuClick }) {
   useEffect(() => {
     return () => {
       if (sessionCardTimerRef.current) clearTimeout(sessionCardTimerRef.current);
+      if (memoryInsightTimerRef.current) clearTimeout(memoryInsightTimerRef.current);
+      if (memoryCooldownTimerRef.current) clearTimeout(memoryCooldownTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (messages.length === 0) return; // no onboarding / landing screen
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'assistant') return;
+
+    if (memoryInsightCooldown.current) return;
+
+    const insight = getReflectMemoryInsight(reflectMemory.current);
+    if (!insight) return;
+    if (reflectMemory.current.memoryInsightShownCount >= 2) return;
+
+    memoryInsightTimerRef.current = setTimeout(() => {
+      setMemoryInsight(insight);
+      reflectMemory.current.memoryInsightShownCount += 1;
+      memoryInsightCooldown.current = true;
+      memoryCooldownTimerRef.current = setTimeout(() => {
+        memoryInsightCooldown.current = false;
+      }, 90000);
+    }, 1200);
+  }, [messages, isLoading]);
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -139,11 +189,29 @@ export default function ChatInterface({ onMenuClick }) {
       lastReflectWasOpen.current = false;
     }
 
+    if (lastActionWasReflectOpen.current === true) {
+      reflectMemory.current.totalFollowUpsAfterReflect += 1;
+      const scenarioType = reflectMemory.current.lastScenarioType || 'custom';
+      reflectMemory.current.scenarioUsage[scenarioType].followUps += 1;
+      lastActionWasReflectOpen.current = false;
+    }
+
     const prompt = input;
     const scenario =
       lockedScenario ||
       SCENARIOS.find((s) => s.prompt.trim() === prompt.trim()) ||
       null;
+
+    reflectMemory.current.totalPrompts += 1;
+    const scenarioType = scenario?.id?.includes('risk')
+      ? 'risk'
+      : scenario?.id?.includes('career')
+        ? 'career'
+        : scenario?.id?.includes('revenue')
+          ? 'revenue'
+          : 'custom';
+    reflectMemory.current.scenarioUsage[scenarioType].prompts += 1;
+    reflectMemory.current.lastScenarioType = scenarioType;
 
     if (scenario) {
       setLockedScenario(scenario);
@@ -271,6 +339,23 @@ export default function ChatInterface({ onMenuClick }) {
           </div>
         )}
       </div>
+
+      {memoryInsight && !isEmpty && (
+        <div
+          style={{
+            margin: '8px 12px 10px 12px',
+            alignSelf: 'flex-start',
+            width: 'min(360px, calc(100% - 24px))',
+            zIndex: 1,
+          }}
+        >
+          <ReflectMemoryCard
+            title={memoryInsight.title}
+            body={memoryInsight.body}
+            onDismiss={() => setMemoryInsight(null)}
+          />
+        </div>
+      )}
 
       {showSessionCard && !isEmpty && (
         <SessionInsightFloatingCard

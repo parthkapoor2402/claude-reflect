@@ -257,6 +257,7 @@ function DimensionSection({ dimension, items, index, expectedGaps }) {
 
 export default function ReflectPanel({
   reflectData,
+  tier = 'high',
   messageId,
   expectedGaps,
   onDismiss,
@@ -304,6 +305,27 @@ export default function ReflectPanel({
     }
   };
 
+  const resolvedTier = tier === 'low' || tier === 'medium' || tier === 'high' ? tier : 'high';
+
+  const summaryByTier = {
+    low: "This answer looks usable, but here's what you may still want to think through.",
+    medium: 'This answer includes a few assumptions or judgment calls worth reviewing.',
+    high: 'Before acting on this response, review the assumptions, missing context, and possible blind spots.',
+  };
+
+  const foundations = Array.isArray(reflectData?.reasoning_foundations)
+    ? reflectData.reasoning_foundations.filter(Boolean)
+    : [];
+  const confidence = Array.isArray(reflectData?.confidence_topology)
+    ? reflectData.confidence_topology.filter(Boolean)
+    : [];
+  const gaps = Array.isArray(reflectData?.completeness_gaps)
+    ? reflectData.completeness_gaps.filter(Boolean)
+    : [];
+  const prompts = Array.isArray(reflectData?.judgment_prompts)
+    ? reflectData.judgment_prompts.filter(Boolean)
+    : [];
+
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -322,6 +344,13 @@ export default function ReflectPanel({
           </span>
         </div>
 
+        <div
+          className="mb-4 rounded-reflect border border-reflect-border px-3 py-2 text-xs leading-relaxed"
+          style={{ color: 'var(--reflect-muted)', background: 'color-mix(in srgb, var(--reflect-card) 85%, transparent)' }}
+        >
+          {summaryByTier[resolvedTier]}
+        </div>
+
         <AnimatePresence>
           {showIntroBanner && !isReflectIntroDismissed() && (
             <ReflectIntroBanner
@@ -332,17 +361,76 @@ export default function ReflectPanel({
         </AnimatePresence>
 
         <div className="h-auto space-y-4 overflow-visible">
-          {DIMENSIONS.map((dim, index) => (
-            <DimensionSection
-              key={dim.key}
-              dimension={dim}
-              items={reflectData?.[dim.key]}
-              index={index}
-              expectedGaps={
-                dim.key === 'completeness_gaps' ? expectedGaps : undefined
-              }
-            />
-          ))}
+          {resolvedTier === 'high' ? (
+            DIMENSIONS.map((dim, index) => (
+              <DimensionSection
+                key={dim.key}
+                dimension={dim}
+                items={reflectData?.[dim.key]}
+                index={index}
+                expectedGaps={
+                  dim.key === 'completeness_gaps' ? expectedGaps : undefined
+                }
+              />
+            ))
+          ) : resolvedTier === 'medium' ? (
+            <>
+              <DimensionSection
+                dimension={DIMENSIONS.find((d) => d.key === 'reasoning_foundations')}
+                items={foundations}
+                index={0}
+              />
+
+              {gaps.slice(0, 1).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: 0.05, ease: 'easeOut' }}
+                  className="h-auto overflow-visible border-b border-reflect-border pb-4 last:border-b-0 last:pb-0"
+                >
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-base">🧭</span>
+                    <span className="text-sm font-semibold text-reflect-text">
+                      Possible missing angle
+                    </span>
+                  </div>
+                  <p className="mb-2 text-xs text-reflect-muted">
+                    One area you may want to sanity-check
+                  </p>
+                  <ul className="space-y-2">
+                    {gaps.slice(0, 1).map((item, i) => (
+                      <li
+                        key={i}
+                        className="h-auto overflow-visible whitespace-normal break-words border-l-2 pl-3 text-[13px] leading-relaxed text-reflect-muted"
+                        style={{ borderColor: 'rgba(96, 165, 250, 0.6)' }}
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              <DimensionSection
+                dimension={DIMENSIONS.find((d) => d.key === 'judgment_prompts')}
+                items={prompts.slice(0, 1)}
+                index={2}
+              />
+            </>
+          ) : (
+            <>
+              <DimensionSection
+                dimension={DIMENSIONS.find((d) => d.key === 'reasoning_foundations')}
+                items={foundations}
+                index={0}
+              />
+              <DimensionSection
+                dimension={DIMENSIONS.find((d) => d.key === 'judgment_prompts')}
+                items={prompts.slice(0, 1)}
+                index={1}
+              />
+            </>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-reflect-border pt-4">

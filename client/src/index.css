@@ -212,6 +212,14 @@
   margin: 16px 0 12px 0;
 }
 
+.reflect-indicator-divider.reflect-indicator-divider-low {
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--reflect-border) 70%, transparent), transparent);
+}
+
+.reflect-indicator-divider.reflect-indicator-divider-medium {
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--reflect-muted) 35%, transparent), transparent);
+}
+
 @keyframes reflectPulse {
   0% {
     box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
@@ -251,6 +259,22 @@
   animation: reflectEntrance 350ms ease-out 400ms both;
 }
 
+.reflect-indicator-banner.reflect-indicator-low {
+  border: 1.5px solid var(--reflect-border);
+  background: var(--reflect-card);
+  box-shadow: none;
+}
+
+.reflect-indicator-banner.reflect-indicator-medium {
+  border: 1.5px solid color-mix(in srgb, var(--reflect-muted) 35%, var(--reflect-border));
+  background: color-mix(in srgb, var(--reflect-card) 92%, var(--reflect-muted));
+  box-shadow: none;
+}
+
+.reflect-indicator-banner.reflect-indicator-high {
+  /* default styles */
+}
+
 .reflect-indicator-banner.reflect-indicator-pulse {
   animation:
     reflectEntrance 350ms ease-out 400ms both,
@@ -260,6 +284,18 @@
 .reflect-indicator-banner:hover {
   background: linear-gradient(135deg, #1f1600 0%, #261900 100%);
   border-color: #fb923c;
+  transform: translateY(-1px);
+}
+
+.reflect-indicator-banner.reflect-indicator-low:hover {
+  background: color-mix(in srgb, var(--reflect-card) 94%, var(--reflect-muted));
+  border-color: color-mix(in srgb, var(--reflect-border) 70%, var(--reflect-muted));
+  transform: translateY(-1px);
+}
+
+.reflect-indicator-banner.reflect-indicator-medium:hover {
+  background: color-mix(in srgb, var(--reflect-card) 88%, var(--reflect-muted));
+  border-color: color-mix(in srgb, var(--reflect-muted) 55%, var(--reflect-border));
   transform: translateY(-1px);
 }
 
