@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Moon, Plus, Sun, X, Zap } from 'lucide-react';
 import { useSession } from './context/SessionContext';
-import { getReflectBadge } from './utils/sessionBanner';
+import { shouldShowResumeCard } from './lib/sessions';
 import { toggleTheme } from './theme/themeStore';
 import { useTheme } from './hooks/useTheme';
 import ChatInterface from './components/ChatInterface';
+import SessionResumeCard from './components/SessionResumeCard';
 
 function formatRelativeTime(ts) {
   const diff = Date.now() - ts;
@@ -169,24 +170,12 @@ function SessionCard({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-zinc-100">{session.title}</div>
                 <div className="text-xs text-zinc-500">{formatRelativeTime(session.updatedAt)}</div>
-                {(() => {
-                  const badge = getReflectBadge(session);
-                  if (!badge) return null;
-
-                  const badgeClass =
-                    badge.tone === 'clear'
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-orange-500/10 text-orange-400';
-
-                  return (
-                    <span
-                      className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${badgeClass}`}
-                    >
-                      <span aria-hidden="true">✦</span>
-                      {badge.text}
-                    </span>
-                  );
-                })()}
+                {session.reflectImprovementCount > 0 && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-xs text-orange-400">
+                    <span aria-hidden="true">✦</span>
+                    {session.reflectImprovementCount} Reflect insights
+                  </span>
+                )}
                 {session.lastReflectNote && (
                   <p className="mt-1 truncate text-xs italic text-zinc-400">
                     {session.lastReflectNote}
@@ -355,24 +344,48 @@ function Sidebar({ onClose, onNewChat, onSessionSelect }) {
 
 export default function App() {
   useTheme();
-  const { loadSession, activeSessionId } = useSession();
+  const { loadSession, activeSessionId, sessions } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatKey, setChatKey] = useState(0);
-  const [sessionSwitchToken, setSessionSwitchToken] = useState(0);
+  const [resumeSession, setResumeSession] = useState(null);
+  const [prefillPrompt, setPrefillPrompt] = useState('');
 
   const handleNewChat = () => {
     setChatKey((k) => k + 1);
     setSidebarOpen(false);
+    setResumeSession(null);
   };
+
+  const completeResume = useCallback(
+    (prefill = '') => {
+      if (!resumeSession) return;
+      loadSession(resumeSession.id);
+      if (prefill.trim()) {
+        setPrefillPrompt(prefill);
+      }
+      setResumeSession(null);
+      setSidebarOpen(false);
+    },
+    [loadSession, resumeSession]
+  );
 
   const handleSessionSelect = useCallback(
     (sessionId) => {
       if (sessionId === activeSessionId) return;
-      loadSession(sessionId);
-      setSessionSwitchToken((token) => token + 1);
+
+      const session = sessions.find((item) => item.id === sessionId);
+      if (!session) return;
+
       setSidebarOpen(false);
+
+      if (shouldShowResumeCard(session)) {
+        setResumeSession(session);
+        return;
+      }
+
+      loadSession(sessionId);
     },
-    [activeSessionId, loadSession]
+    [activeSessionId, sessions, loadSession]
   );
 
   return (
@@ -401,9 +414,17 @@ export default function App() {
       <main className="relative min-w-0 flex-1">
         <ChatInterface
           key={chatKey}
-          sessionSwitchToken={sessionSwitchToken}
+          prefillPrompt={prefillPrompt}
+          onPrefillConsumed={() => setPrefillPrompt('')}
           onMenuClick={() => setSidebarOpen(true)}
         />
+        {resumeSession && (
+          <SessionResumeCard
+            session={resumeSession}
+            onContinue={(prefill) => completeResume(prefill)}
+            onOpenChat={() => completeResume('')}
+          />
+        )}
       </main>
     </div>
   );

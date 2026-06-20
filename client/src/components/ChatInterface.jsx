@@ -11,14 +11,9 @@ import OfflineBanner from './OfflineBanner';
 import SessionInsightFloatingCard from './SessionInsightFloatingCard';
 import ReflectMemoryCard from './ReflectMemoryCard';
 import { getReflectMemoryInsight } from '../utils/reflectMemory';
-import SessionContextBanner from './SessionContextBanner';
 import { initVoiceInput, isSpeechSupported } from '../utils/voiceInput';
-import {
-  dismissBanner,
-  getBannerConfig,
-} from '../utils/sessionBanner';
 
-export default function ChatInterface({ onMenuClick, sessionSwitchToken = 0 }) {
+export default function ChatInterface({ onMenuClick, prefillPrompt, onPrefillConsumed }) {
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const [input, setInput] = useState('');
@@ -27,7 +22,6 @@ export default function ChatInterface({ onMenuClick, sessionSwitchToken = 0 }) {
   const [inputShake, setInputShake] = useState(false);
   const [sendPressed, setSendPressed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [bannerConfig, setBannerConfig] = useState(null);
 
   const reflectOpenCount = useRef(0);
   const followUpAfterReflect = useRef(false);
@@ -173,46 +167,11 @@ export default function ChatInterface({ onMenuClick, sessionSwitchToken = 0 }) {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    if (!sessionSwitchToken || !activeSession) return;
-    setBannerConfig(getBannerConfig(activeSession));
-  }, [sessionSwitchToken, activeSession]);
-
-  const handleDismissBanner = useCallback(() => {
-    if (bannerConfig?.sessionId) {
-      dismissBanner(bannerConfig.sessionId);
-    }
-    setBannerConfig(null);
-  }, [bannerConfig?.sessionId]);
-
-  const handleBannerContinue = useCallback((prefill) => {
-    setInput(prefill);
+    if (!prefillPrompt?.trim()) return;
+    setInput(prefillPrompt);
+    onPrefillConsumed?.();
     setTimeout(() => textareaRef.current?.focus(), 100);
-  }, []);
-
-  const handleBannerRunReflect = useCallback(() => {
-    setInput('Please run a Reflect analysis on this conversation');
-    setTimeout(() => {
-      textareaRef.current?.focus();
-      scrollRef.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 100);
-  }, []);
-
-  useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl || !bannerConfig) return undefined;
-
-    const onScroll = () => {
-      if (scrollEl.scrollTop > 60) {
-        handleDismissBanner();
-      }
-    };
-
-    scrollEl.addEventListener('scroll', onScroll, { passive: true });
-    return () => scrollEl.removeEventListener('scroll', onScroll);
-  }, [bannerConfig, handleDismissBanner]);
+  }, [prefillPrompt, onPrefillConsumed]);
 
   useEffect(() => {
     if (!isSpeechSupported) return undefined;
@@ -375,14 +334,6 @@ export default function ChatInterface({ onMenuClick, sessionSwitchToken = 0 }) {
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4"
       >
-        {!isEmpty && bannerConfig && (
-          <SessionContextBanner
-            config={bannerConfig}
-            onContinue={handleBannerContinue}
-            onRunReflect={handleBannerRunReflect}
-            onDismiss={handleDismissBanner}
-          />
-        )}
         {isEmpty ? (
           <div className="mx-auto max-w-3xl">
             <div className="mb-4 text-center">
@@ -430,14 +381,14 @@ export default function ChatInterface({ onMenuClick, sessionSwitchToken = 0 }) {
         ) : (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-4">
             {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  isActivelyStreaming={message.id === streamingAssistantId}
-                  onReflectExpand={handleReflectToggle}
-                  onReflectDismiss={dismissReflect}
-                  onRetry={retryMessage}
-                />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isActivelyStreaming={message.id === streamingAssistantId}
+                onReflectExpand={handleReflectToggle}
+                onReflectDismiss={dismissReflect}
+                onRetry={retryMessage}
+              />
             ))}
           </div>
         )}
