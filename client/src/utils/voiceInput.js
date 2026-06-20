@@ -46,7 +46,7 @@ export function initVoiceInput(setInputValue) {
 
   const recognition = new SpeechRecognitionAPI();
 
-  recognition.lang = 'hi-IN';
+  recognition.lang = 'en-IN';
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
