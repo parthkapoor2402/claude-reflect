@@ -416,209 +416,94 @@
   opacity: 1;
 }
 
-.resume-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
+.session-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
-  padding: 20px;
-  animation: resumeOverlayIn 0.2s ease forwards;
-}
-
-.resume-overlay-dismissing {
-  animation: resumeOverlayOut 0.2s ease forwards;
-}
-
-@keyframes resumeOverlayIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes resumeOverlayOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.resume-card {
-  position: relative;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  max-width: 520px;
-  background: #1c1c1e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-  animation: resumeCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  margin: -16px -16px 12px;
+  padding: 12px 20px;
+  background: rgba(249, 115, 22, 0.06);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+  animation: bannerSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.session-banner.dismissing {
+  animation: bannerSlideOut 0.2s ease-in forwards;
   overflow: hidden;
 }
 
-.resume-card.dismissing {
-  animation: resumeCardOut 0.2s ease-in forwards;
-}
-
-@keyframes resumeCardIn {
+@keyframes bannerSlideIn {
   from {
+    transform: translateY(-100%);
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
   }
   to {
+    transform: translateY(0);
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes resumeCardOut {
+@keyframes bannerSlideOut {
   from {
+    transform: translateY(0);
     opacity: 1;
-    transform: scale(1);
+    max-height: 80px;
   }
   to {
+    transform: translateY(-8px);
     opacity: 0;
-    transform: scale(0.98);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
 
-.resume-card-header {
+.session-banner-left {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
 
-.resume-card-title {
-  color: #f5f5f5;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.resume-card-star {
+.session-banner-star {
   color: #f97316;
-  margin-right: 6px;
-}
-
-.resume-task-label {
-  margin-top: 6px;
-  color: #9ca3af;
-  font-size: 13px;
-}
-
-.resume-close-btn {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.resume-close-btn:hover {
-  color: #f5f5f5;
-}
-
-.resume-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.resume-stat-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 20px 16px;
-  text-align: center;
-}
-
-.stat-card {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-}
-
-.stat-card.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.resume-stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #f5f5f5;
-  line-height: 1.1;
-}
-
-.resume-stat-green {
-  color: #22c55e;
-}
-
-.resume-stat-orange {
-  color: #f97316;
-}
-
-.resume-stat-label {
-  margin-top: 6px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #9ca3af;
-}
-
-.resume-pct-line {
-  margin: -8px 0 16px;
-  font-size: 13px;
-  color: #22c55e;
-}
-
-.resume-open-section {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  margin-bottom: 16px;
-}
-
-.resume-open-section.visible {
-  opacity: 1;
-}
-
-.resume-section-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #9ca3af;
-  margin-bottom: 8px;
-}
-
-.resume-insight-text {
   font-size: 14px;
-  font-weight: 500;
-  color: #f5f5f5;
-  margin-bottom: 8px;
+  line-height: 1.4;
+  flex-shrink: 0;
 }
 
-.resume-insight-meta {
+.session-banner-copy {
+  min-width: 0;
+}
+
+.session-banner-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e5e7eb;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-banner-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9ca3af;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
-.resume-category-pill {
+.session-banner-pill {
+  display: inline-flex;
   font-size: 11px;
   background: rgba(249, 115, 22, 0.12);
   color: #f97316;
@@ -626,100 +511,58 @@
   padding: 2px 8px;
 }
 
-.resume-insight-status {
-  font-size: 12px;
-  color: #9ca3af;
+.session-banner-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.resume-all-resolved {
-  color: #22c55e;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.resume-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 16px 0 20px;
-}
-
-.resume-primary-btn {
-  width: 100%;
+.session-banner-cta {
   background: #f97316;
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 12px 24px;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.15s ease;
 }
 
-.resume-primary-btn:hover {
+.session-banner-cta:hover {
   background: #ea6c10;
 }
 
-.resume-secondary-btn {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  background: none;
+.session-banner-dismiss {
+  width: 28px;
+  height: 28px;
+  margin-left: 8px;
+  background: transparent;
   border: none;
-  color: #9ca3af;
-  font-size: 13px;
-  text-align: center;
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
-  padding: 8px;
+  border-radius: 4px;
 }
 
-.resume-secondary-btn:hover {
+.session-banner-dismiss:hover {
   color: #e5e7eb;
-  text-decoration: underline;
 }
 
-.resume-footer-line {
-  margin-top: 16px;
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: center;
-}
-
-.resume-countdown {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(to right, #f97316, #fbbf24);
-  border-radius: 0 0 16px 16px;
-  transform-origin: left center;
-  animation: resumeCountdown 8s linear forwards;
-}
-
-.resume-countdown.paused {
-  animation-play-state: paused;
-}
-
-@keyframes resumeCountdown {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
-@media (max-width: 480px) {
-  .resume-overlay {
-    padding: 16px;
+@media (max-width: 640px) {
+  .session-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .resume-card {
-    padding: 20px;
+  .session-banner-actions {
+    justify-content: flex-end;
+  }
+
+  .session-banner-title {
     max-width: 100%;
-  }
-
-  .resume-stats-grid {
-    grid-template-columns: 1fr;
   }
 }

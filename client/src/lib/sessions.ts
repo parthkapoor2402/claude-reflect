@@ -333,15 +333,3 @@ export function updateReflectData(sessionId: string, note: string): void {
     lastReflectNote: note,
   });
 }
-
-export function shouldShowResumeCard(session: Session): boolean {
-  const summary = session.reflectSummary;
-  if (!summary) return false;
-  return summary.reflectRunCount > 0 && summary.totalInsights > 0;
-}
-
-export function getOpenInsights(session: Session): ReflectInsight[] {
-  return (session.reflectSummary?.openInsights ?? []).filter(
-    (insight) => !insight.resolved
-  );
-}
