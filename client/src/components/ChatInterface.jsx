@@ -11,6 +11,7 @@ import OfflineBanner from './OfflineBanner';
 import SessionInsightFloatingCard from './SessionInsightFloatingCard';
 import ReflectMemoryCard from './ReflectMemoryCard';
 import { getReflectMemoryInsight } from '../utils/reflectMemory';
+import { initVoiceInput, isSpeechSupported } from '../utils/voiceInput';
 
 export default function ChatInterface({ onMenuClick }) {
   const scrollRef = useRef(null);
@@ -162,6 +163,11 @@ export default function ChatInterface({ onMenuClick }) {
       }, 90000);
     }, 1200);
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!isSpeechSupported) return undefined;
+    return initVoiceInput();
+  }, []);
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -414,7 +420,49 @@ export default function ChatInterface({ onMenuClick }) {
               inputShake ? 'animate-shake-input' : ''
             } ${hasInput ? 'border-reflect-accent/60' : ''}`}
           >
+            {isSpeechSupported && (
+              <button
+                id="voice-input-btn"
+                className="voice-btn"
+                type="button"
+                aria-label="Voice input"
+                title="Speak your prompt (English / Hindi)"
+                disabled={isLoading}
+              >
+                <svg
+                  id="voice-icon-mic"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                <svg
+                  id="voice-icon-stop"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  style={{ display: 'none' }}
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+            )}
             <textarea
+              id="prompt-input"
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
