@@ -103,6 +103,17 @@ export function deleteSession(id: string): void {
   writeRaw(readRaw().filter((session) => session.id !== id));
 }
 
+export function renameSession(id: string, newTitle: string): void {
+  const session = getSession(id);
+  if (!session) return;
+
+  const trimmed = newTitle.trim();
+  if (!trimmed) return;
+
+  const title = trimmed.length <= 60 ? trimmed : trimmed.slice(0, 60).trim();
+  updateSession({ ...session, title });
+}
+
 export function addMessage(sessionId: string, message: Message): void {
   const session = getSession(sessionId);
   if (!session) return;

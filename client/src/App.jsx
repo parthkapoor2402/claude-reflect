@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Moon, Plus, Sun, X, Zap } from 'lucide-react';
 import { useSession } from './context/SessionContext';
 import { toggleTheme } from './theme/themeStore';
@@ -26,33 +26,223 @@ function formatRelativeTime(ts) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function SessionCard({ session, isActive, onSelect }) {
+function SessionCard({
+  session,
+  isActive,
+  activeSessionId,
+  onSelect,
+  onRename,
+  onDelete,
+  onStartNewSession,
+  onNewChat,
+}) {
+  const [mode, setMode] = useState('default');
+  const [renameValue, setRenameValue] = useState(session.title);
+  const cardRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setRenameValue(session.title);
+  }, [session.title]);
+
+  useEffect(() => {
+    setMode('default');
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    if (mode !== 'renaming') return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode === 'default') return;
+
+    const handleOutsideClick = (event) => {
+      if (cardRef.current && !cardRef.current.contains(event.target)) {
+        if (mode === 'renaming') {
+          const trimmed = renameValue.trim();
+          onRename(session.id, trimmed || session.title);
+        }
+        setMode('default');
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [mode, onRename, renameValue, session.id, session.title]);
+
+  const saveRename = () => {
+    const trimmed = renameValue.trim();
+    onRename(session.id, trimmed || session.title);
+    setMode('default');
+  };
+
+  const handleCardClick = () => {
+    if (mode !== 'default') return;
+    onSelect(session.id);
+  };
+
+  const handleDeleteYes = (event) => {
+    event.stopPropagation();
+    const wasActive = session.id === activeSessionId;
+    onDelete(session.id);
+    if (wasActive) {
+      onStartNewSession();
+      onNewChat?.();
+    }
+    setMode('default');
+  };
+
+  const cardClassName = `group w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-800 ${
+    isActive ? 'border-l-2 border-orange-500 bg-zinc-800' : 'border-l-2 border-transparent'
+  }`;
+
+  if (mode === 'confirmDelete') {
+    return (
+      <div ref={cardRef} className={cardClassName}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-300">Delete?</span>
+          <button
+            type="button"
+            onClick={handleDeleteYes}
+            className="rounded px-2 py-0.5 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300"
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setMode('default');
+            }}
+            className="rounded px-2 py-0.5 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(session.id)}
-      className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-800 ${
-        isActive ? 'border-l-2 border-orange-500 bg-zinc-800' : 'border-l-2 border-transparent'
-      }`}
-    >
-      <div className="truncate text-sm font-medium text-zinc-100">{session.title}</div>
-      <div className="text-xs text-zinc-500">{formatRelativeTime(session.updatedAt)}</div>
-      {session.reflectImprovementCount > 0 && (
-        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-xs text-orange-400">
-          <span aria-hidden="true">✦</span>
-          {session.reflectImprovementCount} Reflect insights
-        </span>
-      )}
-      {session.lastReflectNote && (
-        <p className="mt-1 truncate text-xs italic text-zinc-400">{session.lastReflectNote}</p>
-      )}
-    </button>
+    <div ref={cardRef} className={cardClassName}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleCardClick}
+        onKeyDown={(event) => {
+          if (mode !== 'default') return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onSelect(session.id);
+          }
+        }}
+        className="w-full cursor-pointer text-left"
+      >
+        {mode === 'renaming' ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={renameValue}
+            maxLength={60}
+            onChange={(event) => setRenameValue(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                saveRename();
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
+                setRenameValue(session.title);
+                setMode('default');
+              }
+            }}
+            onBlur={saveRename}
+            className="w-full rounded border border-orange-500/50 bg-zinc-700 px-2 py-0.5 text-sm text-zinc-100 outline-none focus:border-orange-500"
+          />
+        ) : (
+          <>
+            <div className="flex items-start gap-1">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-zinc-100">{session.title}</div>
+                <div className="text-xs text-zinc-500">{formatRelativeTime(session.updatedAt)}</div>
+                {session.reflectImprovementCount > 0 && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-xs text-orange-400">
+                    <span aria-hidden="true">✦</span>
+                    {session.reflectImprovementCount} Reflect insights
+                  </span>
+                )}
+                {session.lastReflectNote && (
+                  <p className="mt-1 truncate text-xs italic text-zinc-400">
+                    {session.lastReflectNote}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  aria-label="Rename session"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setRenameValue(session.title);
+                    setMode('renaming');
+                  }}
+                  className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete session"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMode('confirmDelete');
+                  }}
+                  className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
 function Sidebar({ onClose, onNewChat }) {
   const theme = useTheme();
-  const { sessions, activeSessionId, startNewSession, loadSession } = useSession();
+  const { sessions, activeSessionId, startNewSession, loadSession, renameSession, deleteSession } =
+    useSession();
 
   const sortedSessions = useMemo(
     () => [...sessions].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -128,7 +318,12 @@ function Sidebar({ onClose, onNewChat }) {
                 key={session.id}
                 session={session}
                 isActive={session.id === activeSessionId}
+                activeSessionId={activeSessionId}
                 onSelect={loadSession}
+                onRename={renameSession}
+                onDelete={deleteSession}
+                onStartNewSession={startNewSession}
+                onNewChat={onNewChat}
               />
             ))}
           </div>

@@ -15,6 +15,7 @@ import {
   createSession,
   deleteSession as deleteSessionStorage,
   getSessions,
+  renameSession as renameSessionStorage,
   updateReflectData,
   type Message,
   type Session,
@@ -29,6 +30,7 @@ type SessionContextValue = {
   saveMessage: (role: Message['role'], content: string) => Message;
   markReflectUsed: (note: string) => void;
   deleteSession: (id: string) => void;
+  renameSession: (id: string, newTitle: string) => void;
   reloadSessions: () => void;
 };
 
@@ -119,6 +121,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [refreshSessions]
   );
 
+  const renameSession = useCallback(
+    (id: string, newTitle: string) => {
+      renameSessionStorage(id, newTitle);
+      refreshSessions();
+    },
+    [refreshSessions]
+  );
+
   const value = useMemo<SessionContextValue>(
     () => ({
       sessions: hydrated ? sessions : [],
@@ -129,6 +139,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       saveMessage,
       markReflectUsed,
       deleteSession,
+      renameSession,
       reloadSessions: refreshSessions,
     }),
     [
@@ -141,6 +152,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       saveMessage,
       markReflectUsed,
       deleteSession,
+      renameSession,
       refreshSessions,
     ]
   );
