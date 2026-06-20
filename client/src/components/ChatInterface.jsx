@@ -166,7 +166,7 @@ export default function ChatInterface({ onMenuClick }) {
 
   useEffect(() => {
     if (!isSpeechSupported) return undefined;
-    return initVoiceInput();
+    return initVoiceInput(setInput);
   }, []);
 
   useEffect(() => {

@@ -29,17 +29,13 @@ function isGibberish(text) {
   return false;
 }
 
-function setPromptValue(promptInput, text) {
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLTextAreaElement.prototype,
-    'value'
-  ).set;
-  nativeInputValueSetter.call(promptInput, text);
-  promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+function getTranscript(result) {
+  const alternative = result?.[0];
+  return typeof alternative?.transcript === 'string' ? alternative.transcript : '';
 }
 
-export function initVoiceInput() {
-  if (!SpeechRecognitionAPI) return undefined;
+export function initVoiceInput(setInputValue) {
+  if (!SpeechRecognitionAPI || typeof setInputValue !== 'function') return undefined;
 
   const btn = document.getElementById('voice-input-btn');
   const micIcon = document.getElementById('voice-icon-mic');
@@ -58,6 +54,7 @@ export function initVoiceInput() {
   let isListening = false;
   let finalTranscript = '';
   let silenceTimer = null;
+  let endTimer = null;
   const SILENCE_TIMEOUT = 3500;
 
   function setListeningState(listening) {
@@ -71,15 +68,17 @@ export function initVoiceInput() {
   function resetState() {
     setListeningState(false);
     clearTimeout(silenceTimer);
+    clearTimeout(endTimer);
     silenceTimer = null;
+    endTimer = null;
     finalTranscript = '';
     hideToast();
   }
 
   recognition.onstart = () => {
+    finalTranscript = '';
     setListeningState(true);
     showToast('🎙 Listening...');
-    finalTranscript = '';
   };
 
   recognition.onresult = (event) => {
@@ -88,16 +87,19 @@ export function initVoiceInput() {
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
+      const transcript = getTranscript(result);
+      if (!transcript) continue;
+
       if (result.isFinal) {
-        finalTranscript += `${result.transcript} `;
+        finalTranscript += `${transcript} `;
       } else {
-        interimTranscript += result.transcript;
+        interimTranscript += transcript;
       }
     }
 
-    const displayText = (finalTranscript + interimTranscript).trim();
-    if (displayText) {
-      setPromptValue(promptInput, displayText);
+    const displayText = `${finalTranscript || ''}${interimTranscript || ''}`.trim();
+    if (displayText.length > 0) {
+      setInputValue(displayText);
     }
 
     silenceTimer = setTimeout(() => {
@@ -106,20 +108,21 @@ export function initVoiceInput() {
   };
 
   recognition.onend = () => {
-    const text = (finalTranscript.trim() || promptInput.value.trim());
+    clearTimeout(endTimer);
+    endTimer = setTimeout(() => {
+      const text = finalTranscript.trim();
 
-    if (!text || isGibberish(text)) {
-      if (promptInput.value === text || isGibberish(promptInput.value)) {
-        setPromptValue(promptInput, '');
+      if (!text || isGibberish(text)) {
+        setInputValue('');
+        showToast("Didn't catch that. Try again.", 2500);
+      } else {
+        setInputValue(text);
+        showToast('✓ Done — review and press Send', 2000);
+        promptInput.focus();
       }
-      showToast("Didn't catch that. Try again.", 2500);
-    } else {
-      setPromptValue(promptInput, text);
-      showToast('✓ Done — review and press Send', 2000);
-      promptInput.focus();
-    }
 
-    resetState();
+      resetState();
+    }, 80);
   };
 
   recognition.onerror = (event) => {
@@ -146,6 +149,8 @@ export function initVoiceInput() {
     if (isListening) {
       recognition.stop();
     } else {
+      finalTranscript = '';
+      setInputValue('');
       try {
         recognition.start();
       } catch (error) {
@@ -172,6 +177,7 @@ export function initVoiceInput() {
     btn.removeEventListener('click', handleButtonClick);
     document.removeEventListener('keydown', handleKeyDown);
     clearTimeout(silenceTimer);
+    clearTimeout(endTimer);
     if (isListening) {
       try {
         recognition.abort();
