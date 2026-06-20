@@ -189,9 +189,7 @@ export function useChat(scrollRef, sessionPersistRef) {
         patchMessageReflect(assistantId, patch);
 
         if (patch.data && !patch.loading) {
-          sessionPersistRef?.current?.markReflectUsed?.(
-            deriveReflectNote(patch.data)
-          );
+          sessionPersistRef?.current?.recordReflectRun?.(patch.data);
         }
       };
 
@@ -250,6 +248,7 @@ export function useChat(scrollRef, sessionPersistRef) {
       if (isFollowUpAfterReflect) {
         incrementFollowUpActionCount();
         followUpQueuedRef.current = true;
+        sessionPersistRef?.current?.addressReflectInsight?.();
       }
 
       const activeScenario = scenario || sessionScenarioRef.current;

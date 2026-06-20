@@ -13,7 +13,7 @@ import ReflectMemoryCard from './ReflectMemoryCard';
 import { getReflectMemoryInsight } from '../utils/reflectMemory';
 import { initVoiceInput, isSpeechSupported } from '../utils/voiceInput';
 
-export default function ChatInterface({ onMenuClick }) {
+export default function ChatInterface({ onMenuClick, prefillPrompt, onPrefillConsumed }) {
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const [input, setInput] = useState('');
@@ -55,7 +55,8 @@ export default function ChatInterface({ onMenuClick }) {
     startNewSession,
     saveMessage,
     reloadSessions,
-    markReflectUsed,
+    recordReflectRun,
+    addressReflectInsight,
   } = useSession();
   const sessionPersistRef = useRef({});
   sessionPersistRef.current = {
@@ -63,7 +64,8 @@ export default function ChatInterface({ onMenuClick }) {
     startNewSession,
     saveMessage,
     reloadSessions,
-    markReflectUsed,
+    recordReflectRun,
+    addressReflectInsight,
   };
 
   const {
@@ -163,6 +165,13 @@ export default function ChatInterface({ onMenuClick }) {
       }, 90000);
     }, 1200);
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!prefillPrompt?.trim()) return;
+    setInput(prefillPrompt);
+    onPrefillConsumed?.();
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, [prefillPrompt, onPrefillConsumed]);
 
   useEffect(() => {
     if (!isSpeechSupported) return undefined;

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Moon, Plus, Sun, X, Zap } from 'lucide-react';
 import { useSession } from './context/SessionContext';
+import { shouldShowResumeCard } from './lib/sessions';
 import { toggleTheme } from './theme/themeStore';
 import { useTheme } from './hooks/useTheme';
 import ChatInterface from './components/ChatInterface';
+import SessionResumeCard from './components/SessionResumeCard';
 
 function formatRelativeTime(ts) {
   const diff = Date.now() - ts;
@@ -239,9 +241,9 @@ function SessionCard({
   );
 }
 
-function Sidebar({ onClose, onNewChat }) {
+function Sidebar({ onClose, onNewChat, onSessionSelect }) {
   const theme = useTheme();
-  const { sessions, activeSessionId, startNewSession, loadSession, renameSession, deleteSession } =
+  const { sessions, activeSessionId, startNewSession, renameSession, deleteSession } =
     useSession();
 
   const sortedSessions = useMemo(
@@ -319,7 +321,7 @@ function Sidebar({ onClose, onNewChat }) {
                 session={session}
                 isActive={session.id === activeSessionId}
                 activeSessionId={activeSessionId}
-                onSelect={loadSession}
+                onSelect={onSessionSelect}
                 onRename={renameSession}
                 onDelete={deleteSession}
                 onStartNewSession={startNewSession}
@@ -342,18 +344,54 @@ function Sidebar({ onClose, onNewChat }) {
 
 export default function App() {
   useTheme();
+  const { loadSession, activeSessionId, sessions } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatKey, setChatKey] = useState(0);
+  const [resumeSession, setResumeSession] = useState(null);
+  const [prefillPrompt, setPrefillPrompt] = useState('');
 
   const handleNewChat = () => {
     setChatKey((k) => k + 1);
     setSidebarOpen(false);
+    setResumeSession(null);
   };
+
+  const completeResume = useCallback(
+    (prefill = '') => {
+      if (!resumeSession) return;
+      loadSession(resumeSession.id);
+      if (prefill.trim()) {
+        setPrefillPrompt(prefill);
+      }
+      setResumeSession(null);
+      setSidebarOpen(false);
+    },
+    [loadSession, resumeSession]
+  );
+
+  const handleSessionSelect = useCallback(
+    (sessionId) => {
+      if (sessionId === activeSessionId) return;
+
+      const session = sessions.find((item) => item.id === sessionId);
+      if (!session) return;
+
+      setSidebarOpen(false);
+
+      if (shouldShowResumeCard(session)) {
+        setResumeSession(session);
+        return;
+      }
+
+      loadSession(sessionId);
+    },
+    [activeSessionId, sessions, loadSession]
+  );
 
   return (
     <div className="theme-transition flex h-full bg-reflect-bg">
       <div className="hidden md:block">
-        <Sidebar onNewChat={handleNewChat} />
+        <Sidebar onNewChat={handleNewChat} onSessionSelect={handleSessionSelect} />
       </div>
 
       {sidebarOpen && (
@@ -367,16 +405,26 @@ export default function App() {
             <Sidebar
               onClose={() => setSidebarOpen(false)}
               onNewChat={handleNewChat}
+              onSessionSelect={handleSessionSelect}
             />
           </div>
         </div>
       )}
 
-      <main className="min-w-0 flex-1">
+      <main className="relative min-w-0 flex-1">
         <ChatInterface
           key={chatKey}
+          prefillPrompt={prefillPrompt}
+          onPrefillConsumed={() => setPrefillPrompt('')}
           onMenuClick={() => setSidebarOpen(true)}
         />
+        {resumeSession && (
+          <SessionResumeCard
+            session={resumeSession}
+            onContinue={(prefill) => completeResume(prefill)}
+            onOpenChat={() => completeResume('')}
+          />
+        )}
       </main>
     </div>
   );

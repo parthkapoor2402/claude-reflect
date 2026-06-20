@@ -15,9 +15,12 @@ import {
   createSession,
   deleteSession as deleteSessionStorage,
   getSessions,
+  recordReflectRunFromData,
   renameSession as renameSessionStorage,
-  updateReflectData,
+  addressNextOpenInsight,
+  updateSession,
   type Message,
+  type ReflectApiData,
   type Session,
 } from '../lib/sessions';
 
@@ -29,6 +32,8 @@ type SessionContextValue = {
   loadSession: (id: string) => void;
   saveMessage: (role: Message['role'], content: string) => Message;
   markReflectUsed: (note: string) => void;
+  recordReflectRun: (reflectData: ReflectApiData) => void;
+  addressReflectInsight: () => void;
   deleteSession: (id: string) => void;
   renameSession: (id: string, newTitle: string) => void;
   reloadSessions: () => void;
@@ -102,11 +107,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (note: string) => {
       const sessionId = activeSessionIdRef.current || activeSessionId;
       if (!sessionId) return;
-      updateReflectData(sessionId, note);
+      const session = getSessions().find((s) => s.id === sessionId);
+      if (!session) return;
+      updateSession({
+        ...session,
+        reflectImprovementCount: session.reflectImprovementCount + 1,
+        lastReflectNote: note,
+      });
       refreshSessions();
     },
     [activeSessionId, refreshSessions]
   );
+
+  const recordReflectRun = useCallback(
+    (reflectData: ReflectApiData) => {
+      const sessionId = activeSessionIdRef.current || activeSessionId;
+      if (!sessionId) return;
+      recordReflectRunFromData(sessionId, reflectData);
+      refreshSessions();
+    },
+    [activeSessionId, refreshSessions]
+  );
+
+  const addressReflectInsight = useCallback(() => {
+    const sessionId = activeSessionIdRef.current || activeSessionId;
+    if (!sessionId) return;
+    addressNextOpenInsight(sessionId);
+    refreshSessions();
+  }, [activeSessionId, refreshSessions]);
 
   const deleteSession = useCallback(
     (id: string) => {
@@ -138,6 +166,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loadSession,
       saveMessage,
       markReflectUsed,
+      recordReflectRun,
+      addressReflectInsight,
       deleteSession,
       renameSession,
       reloadSessions: refreshSessions,
@@ -151,6 +181,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loadSession,
       saveMessage,
       markReflectUsed,
+      recordReflectRun,
+      addressReflectInsight,
       deleteSession,
       renameSession,
       refreshSessions,
