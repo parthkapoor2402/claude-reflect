@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getSession, getSessions, updateSession } from '../lib/sessions';
 import {
   getSessionInsightCounts,
   incrementFollowUpActionCount,
@@ -39,6 +40,23 @@ function isReflectDismissed(messageId) {
   }
 }
 
+function deriveReflectNote(reflectData) {
+  const gaps = Array.isArray(reflectData?.completeness_gaps)
+    ? reflectData.completeness_gaps.filter(Boolean)
+    : [];
+  const topology = Array.isArray(reflectData?.confidence_topology)
+    ? reflectData.confidence_topology.filter(Boolean)
+    : [];
+
+  const firstIssue = gaps[0] || topology[0];
+  if (!firstIssue) {
+    return 'Output verified — no gaps found';
+  }
+
+  const trimmed = firstIssue.trim();
+  return trimmed.length <= 60 ? trimmed : trimmed.slice(0, 60).trim();
+}
+
 function buildChatPrompt(trimmed, priorMessages, sessionScenario) {
   if (!sessionScenario) return trimmed;
 
@@ -68,7 +86,7 @@ ${trimmed}
 Give a refined, more complete response that directly addresses the gaps above. Stay on this scenario only.`;
 }
 
-export function useChat(scrollRef) {
+export function useChat(scrollRef, sessionPersistRef) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionInsightVisible, setSessionInsightVisible] = useState(false);
@@ -77,6 +95,55 @@ export function useChat(scrollRef) {
   const lastRequestRef = useRef(null);
   const sessionScenarioRef = useRef(null);
   const followUpQueuedRef = useRef(false);
+
+  const persistUserMessage = useCallback((content) => {
+    const persist = sessionPersistRef?.current;
+    if (!persist?.saveMessage) return;
+
+    if (!persist.activeSessionId && persist.startNewSession) {
+      persist.startNewSession();
+    }
+
+    const sessionId =
+      persist.activeSessionId ||
+      getSessions()[0]?.id;
+
+    if (sessionId) {
+      const session = getSession(sessionId);
+      if (session?.title === 'New Session') {
+        const trimmed = content.trim();
+        const title =
+          trimmed.length <= 50 ? trimmed : trimmed.slice(0, 50).trim();
+        updateSession({ ...session, title });
+        persist.reloadSessions?.();
+      }
+    }
+
+    persist.saveMessage('user', content);
+  }, [sessionPersistRef]);
+
+  const persistAssistantMessage = useCallback(
+    (content) => {
+      sessionPersistRef?.current?.saveMessage?.('assistant', content);
+    },
+    [sessionPersistRef]
+  );
+
+  const restoreMessages = useCallback((sessionMessages = []) => {
+    reflectGenerationRef.current += 1;
+    if (abortRef.current) abortRef.current.abort();
+    setIsLoading(false);
+    setMessages(
+      sessionMessages.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: new Date(message.timestamp),
+        reflect: null,
+      }))
+    );
+    sessionScenarioRef.current = null;
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -120,6 +187,12 @@ export function useChat(scrollRef) {
         settled = true;
         clearTimeout(timeoutId);
         patchMessageReflect(assistantId, patch);
+
+        if (patch.data && !patch.loading) {
+          sessionPersistRef?.current?.markReflectUsed?.(
+            deriveReflectNote(patch.data)
+          );
+        }
       };
 
       const timeoutId = setTimeout(() => {
@@ -159,7 +232,7 @@ export function useChat(scrollRef) {
         });
       }
     },
-    [patchMessageReflect]
+    [patchMessageReflect, sessionPersistRef]
   );
 
   const sendMessage = useCallback(
@@ -219,6 +292,7 @@ export function useChat(scrollRef) {
       };
 
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      persistUserMessage(trimmed);
       setIsLoading(true);
       scrollToBottom();
 
@@ -296,6 +370,8 @@ export function useChat(scrollRef) {
         abortRef.current = null;
 
         if (!hadError && streamedContent.trim()) {
+          persistAssistantMessage(streamedContent.trim());
+
           const autoExpand = Boolean(sessionScenarioRef.current?.id);
           const reflectPrompt =
             sessionScenarioRef.current?.prompt || trimmed;
@@ -333,7 +409,7 @@ export function useChat(scrollRef) {
 
       return true;
     },
-    [isLoading, messages, runReflectAnalysis, scrollToBottom]
+    [isLoading, messages, persistAssistantMessage, persistUserMessage, runReflectAnalysis, scrollToBottom]
   );
 
   const retryMessage = useCallback(
@@ -390,6 +466,7 @@ export function useChat(scrollRef) {
     isLoading,
     sendMessage,
     clearMessages,
+    restoreMessages,
     toggleReflectExpanded,
     dismissReflect,
     retryMessage,

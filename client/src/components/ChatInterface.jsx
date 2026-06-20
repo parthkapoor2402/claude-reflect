@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUp, Menu } from 'lucide-react';
+import { useSession } from '../context/SessionContext';
 import { useChat } from '../hooks/useChat';
 import { SCENARIOS } from '../data/scenarios';
 import MessageBubble from './MessageBubble';
@@ -48,13 +49,51 @@ export default function ChatInterface({ onMenuClick }) {
   const memoryCooldownTimerRef = useRef(null);
 
   const {
+    activeSessionId,
+    activeSession,
+    startNewSession,
+    saveMessage,
+    reloadSessions,
+    markReflectUsed,
+  } = useSession();
+  const sessionPersistRef = useRef({});
+  sessionPersistRef.current = {
+    activeSessionId,
+    startNewSession,
+    saveMessage,
+    reloadSessions,
+    markReflectUsed,
+  };
+
+  const {
     messages,
     isLoading,
     sendMessage,
     toggleReflectExpanded,
     dismissReflect,
     retryMessage,
-  } = useChat(scrollRef);
+    restoreMessages,
+  } = useChat(scrollRef, sessionPersistRef);
+
+  const lastLoadedSessionIdRef = useRef(null);
+
+  useEffect(() => {
+    if (activeSessionId === lastLoadedSessionIdRef.current) return;
+
+    const prevId = lastLoadedSessionIdRef.current;
+    lastLoadedSessionIdRef.current = activeSessionId;
+
+    const sessionMessages = activeSession?.messages ?? [];
+    if (
+      prevId == null &&
+      activeSessionId &&
+      messages.length > sessionMessages.length
+    ) {
+      return;
+    }
+
+    restoreMessages(sessionMessages);
+  }, [activeSessionId, activeSession?.messages, messages.length, restoreMessages]);
 
   const handleReflectToggle = useCallback(
     (messageId) => {

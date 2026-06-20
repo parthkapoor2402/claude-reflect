@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Claude Reflect — Tech Stack &amp; Data Pipeline</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      font-size: 9.5px;
+      line-height: 1.35;
+      color: #171717;
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 14mm;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #f97316;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .header .tagline {
+      font-size: 10px;
+      color: #525252;
+      margin-top: 2px;
+    }
+    .header .meta {
+      text-align: right;
+      font-size: 8.5px;
+      color: #737373;
+    }
+    .header .meta a { color: #f97316; text-decoration: none; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fafafa;
+    }
+    .card h2 {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #f97316;
+      margin-bottom: 6px;
+    }
+    .card ul { list-style: none; }
+    .card li {
+      padding: 2px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card li:last-child { border-bottom: none; }
+    .card li span:first-child { font-weight: 600; color: #404040; }
+    .card li span:last-child { color: #525252; text-align: right; }
+    .pipeline {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 8px 10px 6px;
+      margin-bottom: 8px;
+    }
+    .pipeline h2 {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #f97316;
+      margin-bottom: 6px;
+    }
+    .pipeline p {
+      font-size: 8.5px;
+      color: #525252;
+      margin-bottom: 6px;
+    }
+    svg { width: 100%; height: auto; display: block; }
+    .stages {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stage {
+      border-left: 3px solid #f97316;
+      padding: 6px 8px;
+      background: #fff7ed;
+      border-radius: 0 6px 6px 0;
+    }
+    .stage h3 { font-size: 9px; font-weight: 700; margin-bottom: 3px; }
+    .stage p { font-size: 8px; color: #525252; }
+    .footer {
+      border-top: 1px solid #e5e5e5;
+      padding-top: 6px;
+      font-size: 8px;
+      color: #737373;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Claude Reflect</h1>
+      <p class="tagline">AI Output Transparency Layer — Tech Stack &amp; Data Pipeline (1-Pager)</p>
+    </div>
+    <div class="meta">
+      <div><strong>Live:</strong> <a href="https://claude-reflect-gamma.vercel.app">claude-reflect-gamma.vercel.app</a></div>
+      <div>NextLeap PM Fellowship · May 2026</div>
+      <div>github.com/parthkapoor2402/claude-reflect</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Frontend</h2>
+      <ul>
+        <li><span>Framework</span><span>React 19</span></li>
+        <li><span>Build</span><span>Vite 8</span></li>
+        <li><span>Styling</span><span>Tailwind CSS 3</span></li>
+        <li><span>Motion</span><span>Framer Motion</span></li>
+        <li><span>Markdown</span><span>react-markdown</span></li>
+        <li><span>Icons</span><span>Lucide React</span></li>
+        <li><span>HTTP</span><span>Fetch streaming + Axios</span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Backend &amp; AI</h2>
+      <ul>
+        <li><span>Runtime</span><span>Node.js 18+</span></li>
+        <li><span>API</span><span>Express 5</span></li>
+        <li><span>AI Provider</span><span>Groq API (groq-sdk)</span></li>
+        <li><span>Chat model</span><span>llama-3.3-70b-versatile</span></li>
+        <li><span>Reflect model</span><span>llama-3.1-8b-instant</span></li>
+        <li><span>Config</span><span>dotenv, CORS, rate-limit</span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Deploy &amp; DevOps</h2>
+      <ul>
+        <li><span>Hosting</span><span>Vercel</span></li>
+        <li><span>Client</span><span>Static SPA (client/dist)</span></li>
+        <li><span>API</span><span>Serverless Express (api/index.js)</span></li>
+        <li><span>Monorepo</span><span>client + server + vercel.json</span></li>
+        <li><span>Local dev</span><span>concurrently + Vite proxy</span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Quality &amp; Testing</h2>
+      <ul>
+        <li><span>Unit / API</span><span>Jest + Supertest</span></li>
+        <li><span>Coverage</span><span>18 tests (chat, reflect, integration)</span></li>
+        <li><span>Validation</span><span>reflectValidation.js</span></li>
+        <li><span>Resilience</span><span>JSON fallback, 8s client timeout</span></li>
+        <li><span>Lint</span><span>ESLint (client)</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="pipeline">
+    <h2>Data Pipeline — Dual-Model, Two-Stage Flow</h2>
+    <p>Generate first (streaming answer), analyse second (structured epistemic JSON). Same pipeline for free-form chat and demo scenarios.</p>
+    <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data pipeline flow diagram">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#737373"/>
+        </marker>
+        <linearGradient id="clientBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fff7ed"/>
+          <stop offset="100%" stop-color="#ffedd5"/>
+        </linearGradient>
+        <linearGradient id="apiBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f5f5f5"/>
+          <stop offset="100%" stop-color="#e5e5e5"/>
+        </linearGradient>
+        <linearGradient id="modelBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ecfdf5"/>
+          <stop offset="100%" stop-color="#d1fae5"/>
+        </linearGradient>
+      </defs>
+      <!-- Swimlanes -->
+      <rect x="8" y="28" width="704" height="52" rx="6" fill="url(#clientBg)" stroke="#fdba74"/>
+      <rect x="8" y="88" width="704" height="52" rx="6" fill="url(#apiBg)" stroke="#d4d4d4"/>
+      <rect x="8" y="148" width="704" height="44" rx="6" fill="url(#modelBg)" stroke="#6ee7b7"/>
+      <text x="16" y="22" font-size="9" font-weight="700" fill="#ea580c">REACT CLIENT (VITE)</text>
+      <text x="16" y="82" font-size="9" font-weight="700" fill="#525252">EXPRESS API</text>
+      <text x="16" y="142" font-size="9" font-weight="700" fill="#059669">GROQ API</text>
+      <!-- Nodes -->
+      <rect x="40" y="42" width="88" height="28" rx="5" fill="#fff" stroke="#f97316" stroke-width="1.2"/>
+      <text x="84" y="59" text-anchor="middle" font-size="8.5" font-weight="600">User prompt</text>
+      <rect x="160" y="42" width="100" height="28" rx="5" fill="#fff" stroke="#f97316" stroke-width="1.2"/>
+      <text x="210" y="59" text-anchor="middle" font-size="8.5" font-weight="600">Chat UI</text>
+      <rect x="300" y="42" width="110" height="28" rx="5" fill="#fff" stroke="#f97316" stroke-width="1.2"/>
+      <text x="355" y="59" text-anchor="middle" font-size="8.5" font-weight="600">Reflect Panel</text>
+      <rect x="160" y="100" width="100" height="28" rx="5" fill="#fff" stroke="#737373" stroke-width="1.2"/>
+      <text x="210" y="112" text-anchor="middle" font-size="8" font-weight="600">POST</text>
+      <text x="210" y="122" text-anchor="middle" font-size="8" font-weight="600">/api/chat</text>
+      <rect x="300" y="100" width="100" height="28" rx="5" fill="#fff" stroke="#737373" stroke-width="1.2"/>
+      <text x="350" y="112" text-anchor="middle" font-size="8" font-weight="600">POST</text>
+      <text x="350" y="122" text-anchor="middle" font-size="8" font-weight="600">/api/reflect</text>
+      <rect x="160" y="156" width="130" height="28" rx="5" fill="#fff" stroke="#059669" stroke-width="1.2"/>
+      <text x="225" y="168" text-anchor="middle" font-size="7.5" font-weight="600">llama-3.3-70b-versatile</text>
+      <text x="225" y="178" text-anchor="middle" font-size="7" fill="#525252">stream primary</text>
+      <rect x="320" y="156" width="120" height="28" rx="5" fill="#fff" stroke="#059669" stroke-width="1.2"/>
+      <text x="380" y="168" text-anchor="middle" font-size="7.5" font-weight="600">llama-3.1-8b-instant</text>
+      <text x="380" y="178" text-anchor="middle" font-size="7" fill="#525252">JSON reflect</text>
+      <!-- Arrows -->
+      <line x1="128" y1="56" x2="158" y2="56" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="84" y1="70" x2="84" y2="98" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="210" y1="128" x2="210" y2="154" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="260" y1="56" x2="298" y2="56" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="355" y1="70" x2="355" y2="98" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="350" y1="128" x2="380" y2="154" stroke="#737373" marker-end="url(#arrow)"/>
+      <line x1="290" y1="170" x2="318" y2="170" stroke="#737373" marker-end="url(#arrow)"/>
+      <path d="M 225 156 L 225 128" stroke="#737373" fill="none" marker-end="url(#arrow)"/>
+      <path d="M 380 156 L 380 128" stroke="#737373" fill="none" marker-end="url(#arrow)"/>
+      <path d="M 210 70 L 210 42" stroke="#737373" fill="none" marker-end="url(#arrow)"/>
+      <text x="470" y="56" font-size="7.5" fill="#525252">streamed tokens</text>
+      <text x="470" y="114" font-size="7.5" fill="#525252">prompt + primary_response</text>
+      <text x="470" y="170" font-size="7.5" fill="#525252">severity, gaps, judgment prompts</text>
+    </svg>
+  </section>
+
+  <div class="stages">
+    <div class="stage">
+      <h3>Stage 1 — Primary Chat</h3>
+      <p><strong>POST /api/chat</strong> · Input: prompt + history · Output: text/plain stream · Model: llama-3.3-70b-versatile (fallback: 8b on rate limit)</p>
+    </div>
+    <div class="stage">
+      <h3>Stage 2 — Reflect Analysis</h3>
+      <p><strong>POST /api/reflect</strong> · Input: prompt + primary_response · Output: JSON epistemic breakdown · Model: llama-3.1-8b-instant</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>Claude Reflect — helping humans ask better questions of AI outputs</span>
+    <span>Parth Kapoor · parthkapoor2402</span>
+  </footer>
+</body>
+</html>

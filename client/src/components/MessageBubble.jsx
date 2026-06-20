@@ -128,6 +128,12 @@ export default function MessageBubble({
             )}
           </div>
 
+          {reflect?.data && !reflect?.loading && !reflect?.dismissed && (
+            <span className="mt-1 block text-xs text-orange-400/70">
+              ✦ Reflect reviewed
+            </span>
+          )}
+
           {showIndicator && (
             <div className="reflect-layer mt-2 w-full max-w-full">
               <ReflectIndicator

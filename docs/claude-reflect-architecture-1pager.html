@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Claude Reflect — Architecture Overview</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      font-size: 9px;
+      line-height: 1.4;
+      color: #1a1a2e;
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 14mm;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .brand h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+    }
+    .brand .subtitle {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 3px;
+      max-width: 340px;
+    }
+    .brand .badge {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 7.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .meta {
+      text-align: right;
+      font-size: 8px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .meta strong { color: #334155; font-weight: 600; }
+    .meta a { color: #0f766e; text-decoration: none; }
+    .summary {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      font-size: 8.5px;
+      color: #475569;
+    }
+    .summary strong { color: #0f172a; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card-head {
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+    }
+    .card-body { padding: 6px 10px 7px; background: #fff; }
+    .card-body table { width: 100%; border-collapse: collapse; }
+    .card-body td {
+      padding: 3px 0;
+      font-size: 8px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .card-body tr:last-child td { border-bottom: none; }
+    .card-body td:first-child {
+      font-weight: 600;
+      color: #334155;
+      width: 38%;
+      padding-right: 6px;
+    }
+    .card-body td:last-child { color: #64748b; }
+    .pipeline {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .pipeline-head {
+      background: #0f766e;
+      color: #fff;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+    }
+    .pipeline-body { padding: 8px 10px 6px; }
+    .pipeline-body p {
+      font-size: 8px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    svg { width: 100%; height: auto; display: block; }
+    .stages {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stage {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #f8fafc;
+    }
+    .stage-num {
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0f766e;
+      margin-bottom: 2px;
+    }
+    .stage h3 { font-size: 9px; font-weight: 700; color: #0f172a; margin-bottom: 3px; }
+    .stage p { font-size: 7.5px; color: #64748b; line-height: 1.45; }
+    .stage code {
+      font-family: Consolas, monospace;
+      font-size: 7px;
+      background: #e2e8f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #334155;
+    }
+    .footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 7px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5px;
+      color: #94a3b8;
+    }
+    .footer span:last-child { color: #64748b; }
+  </style>
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">
+      <h1>Claude Reflect</h1>
+      <p class="subtitle">AI Output Transparency Layer — Architecture &amp; Technology Overview</p>
+      <span class="badge">Technical Specification · 1 Page</span>
+    </div>
+    <div class="meta">
+      <div><strong>Production</strong> <a href="https://claude-reflect-gamma.vercel.app">claude-reflect-gamma.vercel.app</a></div>
+      <div><strong>Repository</strong> github.com/parthkapoor2402/claude-reflect</div>
+      <div><strong>Version</strong> 1.0 · June 2026</div>
+    </div>
+  </header>
+
+  <p class="summary">
+    <strong>Overview.</strong> Claude Reflect is a full-stack web application that augments generative AI chat with a post-response epistemic analysis layer. A dual-model pipeline separates primary answer generation from structured Reflect output — surfacing assumptions, confidence zones, completeness gaps, and judgment prompts without replacing human decision-making.
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="card-head">Client Layer</div>
+      <div class="card-body">
+        <table>
+          <tr><td>Framework</td><td>React 19 (functional components, hooks)</td></tr>
+          <tr><td>Build tool</td><td>Vite 8</td></tr>
+          <tr><td>Styling</td><td>Tailwind CSS 3, CSS variables (theme)</td></tr>
+          <tr><td>UI / Motion</td><td>Framer Motion, Lucide React icons</td></tr>
+          <tr><td>Rendering</td><td>react-markdown (AI responses)</td></tr>
+          <tr><td>Networking</td><td>Fetch API (streaming), Axios</td></tr>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head">Server &amp; AI Layer</div>
+      <div class="card-body">
+        <table>
+          <tr><td>Runtime</td><td>Node.js 18+</td></tr>
+          <tr><td>API framework</td><td>Express 5</td></tr>
+          <tr><td>LLM provider</td><td>Groq API (groq-sdk)</td></tr>
+          <tr><td>Chat model</td><td>llama-3.3-70b-versatile</td></tr>
+          <tr><td>Reflect model</td><td>llama-3.1-8b-instant (JSON mode)</td></tr>
+          <tr><td>Middleware</td><td>CORS, dotenv, express-rate-limit</td></tr>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head">Infrastructure</div>
+      <div class="card-body">
+        <table>
+          <tr><td>Hosting</td><td>Vercel (monorepo deployment)</td></tr>
+          <tr><td>Frontend</td><td>Static SPA — client/dist</td></tr>
+          <tr><td>Backend</td><td>Serverless Express — api/index.js</td></tr>
+          <tr><td>Routing</td><td>vercel.json (SPA fallback + /api)</td></tr>
+          <tr><td>Local dev</td><td>concurrently, Vite proxy → :3001</td></tr>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head">Quality Assurance</div>
+      <div class="card-body">
+        <table>
+          <tr><td>Test framework</td><td>Jest + Supertest</td></tr>
+          <tr><td>Test suite</td><td>18 tests (unit, API, integration)</td></tr>
+          <tr><td>Validation</td><td>reflectValidation.js (JSON normalize)</td></tr>
+          <tr><td>Resilience</td><td>Fallback JSON, 8s client timeout</td></tr>
+          <tr><td>Linting</td><td>ESLint (client)</td></tr>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section class="pipeline">
+    <div class="pipeline-head">Data Pipeline — Dual-Model Architecture</div>
+    <div class="pipeline-body">
+      <p>Two-stage asynchronous flow: Stage 1 streams the primary response; Stage 2 performs epistemic decomposition on the completed output. Identical pipeline for free-form and scenario-based interactions.</p>
+      <svg viewBox="0 0 720 188" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data pipeline architecture diagram">
+        <defs>
+          <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/>
+          </marker>
+        </defs>
+        <rect x="8" y="24" width="704" height="46" rx="4" fill="#f8fafc" stroke="#cbd5e1"/>
+        <rect x="8" y="78" width="704" height="46" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+        <rect x="8" y="132" width="704" height="40" rx="4" fill="#ecfdf5" stroke="#99f6e4"/>
+        <text x="14" y="18" font-size="8" font-weight="700" fill="#334155">CLIENT</text>
+        <text x="14" y="72" font-size="8" font-weight="700" fill="#334155">API SERVER</text>
+        <text x="14" y="126" font-size="8" font-weight="700" fill="#0f766e">GROQ LLM</text>
+        <rect x="36" y="36" width="76" height="24" rx="3" fill="#fff" stroke="#0f172a" stroke-width="1"/>
+        <text x="74" y="51" text-anchor="middle" font-size="7.5" font-weight="600" fill="#0f172a">User Input</text>
+        <rect x="140" y="36" width="88" height="24" rx="3" fill="#fff" stroke="#0f172a" stroke-width="1"/>
+        <text x="184" y="51" text-anchor="middle" font-size="7.5" font-weight="600" fill="#0f172a">Chat Interface</text>
+        <rect x="256" y="36" width="96" height="24" rx="3" fill="#fff" stroke="#0f172a" stroke-width="1"/>
+        <text x="304" y="51" text-anchor="middle" font-size="7.5" font-weight="600" fill="#0f172a">Reflect Panel</text>
+        <rect x="140" y="90" width="88" height="24" rx="3" fill="#fff" stroke="#475569" stroke-width="1"/>
+        <text x="184" y="105" text-anchor="middle" font-size="7.5" font-weight="600" fill="#334155">POST /api/chat</text>
+        <rect x="256" y="90" width="96" height="24" rx="3" fill="#fff" stroke="#475569" stroke-width="1"/>
+        <text x="304" y="105" text-anchor="middle" font-size="7.5" font-weight="600" fill="#334155">POST /api/reflect</text>
+        <rect x="140" y="140" width="120" height="24" rx="3" fill="#fff" stroke="#0f766e" stroke-width="1"/>
+        <text x="200" y="155" text-anchor="middle" font-size="7" font-weight="600" fill="#0f766e">llama-3.3-70b (stream)</text>
+        <rect x="280" y="140" width="110" height="24" rx="3" fill="#fff" stroke="#0f766e" stroke-width="1"/>
+        <text x="335" y="155" text-anchor="middle" font-size="7" font-weight="600" fill="#0f766e">llama-3.1-8b (JSON)</text>
+        <line x1="112" y1="48" x2="138" y2="48" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="74" y1="60" x2="74" y2="88" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="184" y1="114" x2="184" y2="138" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="228" y1="48" x2="254" y2="48" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="304" y1="60" x2="304" y2="88" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="304" y1="114" x2="335" y2="138" stroke="#64748b" marker-end="url(#arr)"/>
+        <line x1="260" y1="152" x2="278" y2="152" stroke="#64748b" marker-end="url(#arr)"/>
+        <path d="M 200 140 L 200 114" stroke="#64748b" fill="none" marker-end="url(#arr)"/>
+        <path d="M 184 60 L 184 36" stroke="#64748b" fill="none" marker-end="url(#arr)"/>
+        <text x="400" y="48" font-size="7" fill="#64748b">← streamed text/plain tokens</text>
+        <text x="400" y="102" font-size="7" fill="#64748b">← prompt + primary_response</text>
+        <text x="400" y="152" font-size="7" fill="#64748b">← severity · gaps · judgment prompts</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="stages">
+    <div class="stage">
+      <div class="stage-num">Stage 1</div>
+      <h3>Primary Response Generation</h3>
+      <p>Endpoint <code>POST /api/chat</code> · Accepts prompt and conversation history · Returns chunked <code>text/plain</code> stream · Powered by llama-3.3-70b-versatile with automatic fallback to 8b model on rate limit.</p>
+    </div>
+    <div class="stage">
+      <div class="stage-num">Stage 2</div>
+      <h3>Epistemic Reflect Analysis</h3>
+      <p>Endpoint <code>POST /api/reflect</code> · Accepts prompt and primary response · Returns structured JSON: severity, reasoning foundations, confidence topology, completeness gaps, judgment prompts.</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>Claude Reflect — AI Output Transparency Layer</span>
+    <span>Parth Kapoor · github.com/parthkapoor2402</span>
+  </footer>
+</body>
+</html>
