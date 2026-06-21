@@ -15,6 +15,8 @@ import {
   createSession,
   deleteSession as deleteSessionStorage,
   getSessions,
+  setActiveSessionIdStorage,
+  getActiveSessionId,
   recordReflectRunFromData,
   renameSession as renameSessionStorage,
   addressNextOpenInsight,
@@ -48,8 +50,46 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const activeSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setSessions(getSessions());
+    const storedSessions = getSessions();
+    setSessions(storedSessions);
+
+    const storedActiveId = getActiveSessionId();
+    const validActiveId =
+      storedActiveId &&
+      storedSessions.some((session) => session.id === storedActiveId)
+        ? storedActiveId
+        : storedSessions[0]?.id ?? null;
+
+    activeSessionIdRef.current = validActiveId;
+    setActiveSessionId(validActiveId);
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key !== 'cr_sessions' &&
+        event.key !== 'cr_sessions_backup' &&
+        event.key !== 'cr_active_session_id'
+      ) {
+        return;
+      }
+
+      const storedSessions = getSessions();
+      setSessions(storedSessions);
+
+      const storedActiveId = getActiveSessionId();
+      if (
+        storedActiveId &&
+        storedSessions.some((session) => session.id === storedActiveId)
+      ) {
+        activeSessionIdRef.current = storedActiveId;
+        setActiveSessionId(storedActiveId);
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const refreshSessions = useCallback(() => {
@@ -68,12 +108,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const startNewSession = useCallback(() => {
     const session = createSession();
     activeSessionIdRef.current = session.id;
+    setActiveSessionIdStorage(session.id);
     refreshSessions();
     setActiveSessionId(session.id);
   }, [refreshSessions]);
 
   const loadSession = useCallback((id: string) => {
     activeSessionIdRef.current = id;
+    setActiveSessionIdStorage(id);
     setActiveSessionId(id);
   }, []);
 
@@ -85,6 +127,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const session = createSession();
         sessionId = session.id;
         activeSessionIdRef.current = sessionId;
+        setActiveSessionIdStorage(sessionId);
         setActiveSessionId(sessionId);
       }
 
@@ -143,6 +186,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setActiveSessionId((current) => {
         const next = current === id ? null : current;
         activeSessionIdRef.current = next;
+        setActiveSessionIdStorage(next);
         return next;
       });
     },

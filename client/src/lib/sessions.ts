@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'cr_sessions';
+const BACKUP_KEY = 'cr_sessions_backup';
+const ACTIVE_SESSION_KEY = 'cr_active_session_id';
 
 export type Message = {
   id: string;
@@ -54,11 +56,11 @@ function canUseStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
-function readRaw(): Session[] {
+function readStorageKey(key: string): Session[] {
   if (!canUseStorage()) return [];
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
 
     const parsed: unknown = JSON.parse(raw);
@@ -68,13 +70,85 @@ function readRaw(): Session[] {
   }
 }
 
-function writeRaw(sessions: Session[]): void {
+function readRaw(): Session[] {
+  const primary = readStorageKey(STORAGE_KEY);
+  if (primary.length > 0) return primary;
+
+  const backup = readStorageKey(BACKUP_KEY);
+  if (backup.length > 0) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(backup));
+    } catch {
+      /* ignore */
+    }
+    return backup;
+  }
+
+  return [];
+}
+
+function mergeSessions(primary: Session[], backup: Session[]): Session[] {
+  const merged = new Map<string, Session>();
+
+  for (const session of [...backup, ...primary]) {
+    const existing = merged.get(session.id);
+    if (!existing || session.updatedAt >= existing.updatedAt) {
+      merged.set(session.id, session);
+    }
+  }
+
+  return [...merged.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+function readAllSessions(): Session[] {
+  const primary = readStorageKey(STORAGE_KEY);
+  const backup = readStorageKey(BACKUP_KEY);
+
+  if (primary.length === 0 && backup.length === 0) return [];
+  if (primary.length === 0) return backup;
+  if (backup.length === 0) return primary;
+
+  return mergeSessions(primary, backup);
+}
+
+export function getActiveSessionId(): string | null {
+  if (!canUseStorage()) return null;
+
+  try {
+    return localStorage.getItem(ACTIVE_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveSessionIdStorage(id: string | null): void {
   if (!canUseStorage()) return;
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    if (id) {
+      localStorage.setItem(ACTIVE_SESSION_KEY, id);
+    } else {
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+    }
   } catch {
-    /* ignore quota / privacy errors */
+    /* ignore */
+  }
+}
+
+function writeRaw(sessions: Session[]): void {
+  if (!canUseStorage()) return;
+
+  const payload = JSON.stringify(sessions);
+
+  try {
+    localStorage.setItem(STORAGE_KEY, payload);
+    localStorage.setItem(BACKUP_KEY, payload);
+  } catch {
+    try {
+      localStorage.setItem(BACKUP_KEY, payload);
+    } catch {
+      /* ignore quota / privacy errors */
+    }
   }
 }
 
@@ -146,7 +220,11 @@ function ensureReflectSummary(session: Session): ReflectSummary {
 }
 
 export function getSessions(): Session[] {
-  return readRaw();
+  const sessions = readAllSessions();
+  if (sessions.length > 0) {
+    writeRaw(sessions);
+  }
+  return sessions;
 }
 
 export function getSession(id: string): Session | null {
